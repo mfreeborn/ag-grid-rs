@@ -1,7 +1,10 @@
 [package]
 name = "ag-grid-derive"
 version = "0.1.0"
+authors = ["Michael Freeborn <michaelfreeborn1@gmail.com>"]
 edition = "2021"
+description = "Internal proc-macro library for ag-grid-rs"
+license = "Apache-2.0 OR MIT"
 
 [lib]
 proc-macro = true

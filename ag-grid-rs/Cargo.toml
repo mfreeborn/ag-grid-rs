@@ -1,8 +1,10 @@
 [package]
 name = "ag-grid-rs"
-version = "0.1.0"
+version = "0.1.0"  # remember to update ag-grid-derive at the same time
+authors = ["Michael Freeborn <michaelfreeborn1@gmail.com>"]
 edition = "2021"
-authors = ["Michael Freeborn"]
+description = "Wasm bindings for AG Grid"
+license = "Apache-2.0 OR MIT"
 
 [dependencies]
 ag-grid-derive = { version = "0.1.0", path = "../ag-grid-derive" }
