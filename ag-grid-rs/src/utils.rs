@@ -29,3 +29,27 @@ where
         self.to_owned().into()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use serde::Serialize;
+    use serde_json::{json, to_value};
+
+    use super::*;
+
+    #[test]
+    fn test_bool_serializer() {
+        // TODO: this needs to pass without the use of #[serde(untagged)]
+        #[derive(Serialize)]
+        #[serde(untagged)]
+        enum Test {
+            #[serde(serialize_with = "serialize_true")]
+            True,
+            #[serde(serialize_with = "serialize_false")]
+            False,
+        }
+
+        assert_eq!(to_value(Test::True).unwrap(), json!(true));
+        assert_eq!(to_value(Test::False).unwrap(), json!(false));
+    }
+}
