@@ -1,0 +1,16 @@
+use syn::DeriveInput;
+
+mod field_setter;
+mod from_interface;
+
+#[proc_macro_derive(FieldSetter, attributes(field_setter))]
+pub fn field_setter(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let input = syn::parse::<DeriveInput>(input).unwrap();
+    field_setter::field_setter_impl(input)
+}
+
+#[proc_macro_derive(FromInterface)]
+pub fn from_interface(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let input = syn::parse::<DeriveInput>(input).unwrap();
+    from_interface::from_interface_impl(input)
+}
