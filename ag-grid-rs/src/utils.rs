@@ -1,5 +1,6 @@
 use serde::Serializer;
 
+#[allow(unused)]
 pub fn serialize_true<S>(serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
@@ -7,6 +8,7 @@ where
     serializer.serialize_bool(true)
 }
 
+#[allow(unused)]
 pub fn serialize_false<S>(serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
@@ -14,6 +16,7 @@ where
     serializer.serialize_bool(false)
 }
 
+#[allow(clippy::wrong_self_convention)]
 pub trait IntoValue {
     fn into_value(&self) -> serde_json::Value;
 }
