@@ -15,7 +15,7 @@ jobs:
     - run: cargo login ${{ env.CRATES_IO_TOKEN }}
       env:
         CRATES_IO_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
-    - run: cargo publish --allow-dirty
+    - run: cargo publish --allow-dirty -p ag-grid-rs
 
   create-gh-release:
     name: Deploy to GH Releases
