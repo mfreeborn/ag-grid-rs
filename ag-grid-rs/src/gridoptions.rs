@@ -1,3 +1,4 @@
+use ag_grid_derive::FieldSetter;
 use serde::Serialize;
 use serde_with::skip_serializing_none;
 use web_sys::HtmlElement;
@@ -6,24 +7,29 @@ use crate::{column::ColumnDef, AgGrid, Grid, RowData, RowModelType};
 
 /// An instance of an AG Grid [`GridOptions`].
 ///
-/// With this struct, users can specify the initial options for their grid, before calling the
-/// [`build()`] method to receive an instance of [`Grid`]. The various options are fully customisable
-/// using the builder pattern, so you only need to specify what you need. The options mirror
-/// those used in the AG Grid library.
+/// With this struct, users can specify the initial options for their grid,
+/// before calling the [`build()`] method to receive an instance of [`Grid`].
+/// The various options are fully customisable using the builder pattern, so you
+/// only need to specify what you need. The options mirror those used in the AG
+/// Grid library.
 ///
 /// [`GridOptions`]: https://www.ag-grid.com/javascript-data-grid/grid-options/
 #[skip_serializing_none]
-#[derive(Serialize, Default)]
+#[derive(Serialize, FieldSetter)]
 #[serde(rename_all = "camelCase")]
 pub struct GridOptions {
     // Accessories
-    // TODO
+    // All options are enterprise-only
 
     // Clipboard
-    // TODO
+    // All options are enterprise-only
 
     // Column Definitions
+    /// Set the column definitions. Fields set here take precedence over those
+    /// set in `default_col_def`.
     pub column_defs: Option<Vec<ColumnDef>>,
+    /// Set the default column definition. Fields set here have lower precedence
+    /// than fields set on a per-column basis in `column_defs`.
     pub default_col_def: Option<ColumnDef>,
     // default_col_group_def
     // column_types
@@ -73,6 +79,7 @@ pub struct GridOptions {
     // TODO
 
     // Pagination
+    /// Set whether pagination is enabled.
     pub pagination: Option<bool>,
     // TODO
 
@@ -92,14 +99,18 @@ pub struct GridOptions {
     // TODO
 
     // RowModel
+    /// Sets the row model type.
     pub row_model_type: Option<RowModelType>,
     // get_row_id
 
     // RowModel: Client Side
+    /// Set the row data.
     pub row_data: Option<Vec<RowData>>,
     // TODO
 
     // RowModel: Infinite
+    /// How many rows for each block in the store, i.e. how many rows returned
+    /// from the server at a time.
     pub cache_block_size: Option<u32>,
     // TODO
 
@@ -130,8 +141,9 @@ impl GridOptions {
         Default::default()
     }
 
-    /// A finaliser method for the [`GridOptions`] struct. This method constructs the underlying
-    /// JavaScript grid and returns a handle, [`Grid`], which provides access to the grid APIs.
+    /// A finaliser method for the [`GridOptions`] struct. This method
+    /// constructs the underlying JavaScript grid and returns a handle,
+    /// [`Grid`], which provides access to the grid APIs.
     pub fn build(self, div: HtmlElement) -> Grid {
         let grid_options =
             serde_wasm_bindgen::to_value(&self).expect("failed converting GridOptions to JsValue");
@@ -143,43 +155,5 @@ impl GridOptions {
             api: js_grid.gridOptions().api(),
             column_api: js_grid.gridOptions().columnApi(),
         }
-    }
-
-    /// Set the column definitions. Fields set here take precedence over those set
-    /// in `default_col_def`.
-    pub fn column_defs(mut self, column_defs: Vec<ColumnDef>) -> Self {
-        self.column_defs = Some(column_defs);
-        self
-    }
-
-    /// Set the default column definition. Fields set here have lower precedence
-    /// than fields set on a per-column basis in `column_defs`.
-    pub fn default_col_def(mut self, col_def: ColumnDef) -> Self {
-        self.default_col_def = Some(col_def);
-        self
-    }
-
-    /// Set the row data.
-    pub fn row_data(mut self, row_data: Vec<RowData>) -> Self {
-        self.row_data = Some(row_data);
-        self
-    }
-
-    /// Sets the row model type.
-    pub fn row_model_type(mut self, row_model_type: RowModelType) -> Self {
-        self.row_model_type = Some(row_model_type);
-        self
-    }
-
-    /// Set whether pagination is enabled.
-    pub fn pagination(mut self, pagination: bool) -> Self {
-        self.pagination = Some(pagination);
-        self
-    }
-
-    /// How many rows for each block in the store, i.e. how many rows returned from the server at a time.
-    pub fn cache_block_size(mut self, cache_block_size: u32) -> Self {
-        self.cache_block_size = Some(cache_block_size);
-        self
     }
 }

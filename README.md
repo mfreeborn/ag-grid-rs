@@ -24,6 +24,7 @@ use yew::prelude::*;
 
 #[function_component(Grid)]
 fn grid() -> Html {
+    // We are using yew_hooks::use_effect_once to initialise the grid once on page load
     yew_hooks::use_effect_once()
         // Get the element to which you want to attach the grid
         let grid_div = get_element_by_id("grid-div");
@@ -41,12 +42,12 @@ fn grid() -> Html {
             .row_model_type(RowModelType::Infinite)
             .pagination(true)
             .cache_block_size(100)
-            // The `build` finaliser consumes the `GridOptions` and returns a `Grid`
+            // The `build` finaliser consumes the `GridOptions` and returns a `Grid` instance
             .build(grid_div);
 
         // Here we are showing that you can also configure the grid after it is built,
         // in the same way that you can in the JavaScript library
-        let data_source = DataSourceBuilder::new(|params: GetRowsParams| {
+        let data_source = DataSourceBuilder::new(|params: GetRowsParams| async move {
             // In reality you would communicate with your backend server here to retrieve the
             // requested rows
             let row = RowData::new(vec![("make", &"Jaguar"), ("model", &"F-Type")]);
@@ -54,6 +55,8 @@ fn grid() -> Html {
         })
         .build();
 
+        // The `Grid` instance we built a few lines up provides access to the underlying grid
+        // and column apis
         grid.api.set_data_source(data_source);
         || ()
     });

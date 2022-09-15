@@ -1,4 +1,5 @@
 use serde::Serializer;
+use wasm_bindgen::prelude::*;
 
 #[allow(unused)]
 pub fn serialize_true<S>(serializer: S) -> Result<S::Ok, S::Error>
@@ -28,6 +29,12 @@ where
     fn into_value(&self) -> serde_json::Value {
         self.to_owned().into()
     }
+}
+
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(js_namespace = console)]
+    pub(crate) fn log(x: String);
 }
 
 #[cfg(test)]

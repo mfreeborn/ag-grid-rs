@@ -1,5 +1,5 @@
 use darling::{ast, FromDeriveInput, FromField};
-use proc_macro2::TokenStream;
+use proc_macro2::{Ident, TokenStream};
 use quote::{quote, ToTokens, TokenStreamExt};
 use syn::{DeriveInput, GenericArgument, Generics, TypeParamBound};
 
@@ -73,6 +73,7 @@ impl ToTokens for StructReceiver {
 #[derive(Clone)]
 enum FieldType {
     OptionString,
+    OptionOneOrManyString,
     OptionOther(syn::Type),
 }
 
@@ -130,6 +131,7 @@ impl FieldType {
 
         match remaining.as_slice() {
             ["String"] => FieldType::OptionString,
+            ["OneOrMany", "String"] => FieldType::OptionOneOrManyString,
             _ => FieldType::OptionOther(types.get(1).cloned().unwrap()),
         }
     }
@@ -152,7 +154,8 @@ struct FieldReceiver {
 
 impl FieldReceiver {
     fn default_value(&self) -> TokenStream {
-        // Safe to unwrap because this macro can only be used on structs with named fields
+        // Safe to unwrap because this macro can only be used on structs with named
+        // fields
         let field_ident = self.ident.as_ref().unwrap();
         quote![
             #field_ident: None,
@@ -171,9 +174,22 @@ impl FieldReceiver {
 
         let field_type = FieldType::infer(field_type);
 
-        let (value_type, value_convert) = match &field_type {
-            FieldType::OptionString => (quote![impl AsRef<str>], quote![value.as_ref().to_owned()]),
-            FieldType::OptionOther(inner_ty) => (quote![#inner_ty], quote![value]),
+        let (value_type, value_convert, array_value_convert) = match &field_type {
+            FieldType::OptionString => (
+                quote![impl AsRef<str>],
+                quote![value.as_ref().to_owned()],
+                quote![],
+            ),
+            FieldType::OptionOther(inner_ty) => (quote![#inner_ty], quote![value], quote![]),
+            FieldType::OptionOneOrManyString => (
+                quote![impl AsRef<str>],
+                quote![value.as_ref().to_string().into()],
+                quote![value
+                    .iter()
+                    .map(|v| v.as_ref().to_string())
+                    .collect::<Vec<_>>()
+                    .into()],
+            ),
         };
 
         let setter = quote! {
@@ -184,8 +200,26 @@ impl FieldReceiver {
             }
         };
 
+        let array_setter = match field_type {
+            FieldType::OptionOneOrManyString => {
+                let array_ident = Ident::new(
+                    &format!("{}_array", field_ident.to_string().trim_end_matches('_')),
+                    proc_macro2::Span::call_site(),
+                );
+                quote! {
+                    #field_docs
+                    pub fn #array_ident(mut self, value: Vec<#value_type>) -> Self {
+                        self.#field_ident = Some(#array_value_convert);
+                        self
+                    }
+                }
+            }
+            _ => quote![],
+        };
+
         quote![
             #setter
+            #array_setter
         ]
     }
 

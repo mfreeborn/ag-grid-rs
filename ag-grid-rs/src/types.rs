@@ -1,31 +1,35 @@
+use std::future::Future;
+
 use ag_grid_derive::FromInterface;
 use js_sys::Function;
 use serde::Serialize;
-use wasm_bindgen::prelude::*;
+use serde_wasm_bindgen::Serializer as WasmSerializer;
+use wasm_bindgen::{prelude::*, JsCast};
+use wasm_bindgen_futures::spawn_local;
 
-use crate::RowData;
+use crate::{utils::log, RowData};
 
 #[wasm_bindgen]
 extern "C" {
-    pub type IGetRowsParams;
+    type IGetRowsParams;
 
     #[wasm_bindgen(method, getter, js_name = startRow)]
-    pub fn start_row(this: &IGetRowsParams) -> u32;
+    fn start_row(this: &IGetRowsParams) -> u32;
 
     #[wasm_bindgen(method, getter, js_name = endRow)]
-    pub fn end_row(this: &IGetRowsParams) -> u32;
+    fn end_row(this: &IGetRowsParams) -> u32;
 
     #[wasm_bindgen(method, getter, js_name = sortModel)]
-    pub fn sort_model(this: &IGetRowsParams) -> Vec<ISortModelItem>;
+    fn sort_model(this: &IGetRowsParams) -> Vec<ISortModelItem>;
 
     #[wasm_bindgen(method, getter, js_name = filterModel)]
-    pub fn filter_model(this: &IGetRowsParams) -> JsValue;
+    fn filter_model(this: &IGetRowsParams) -> JsValue;
 
     #[wasm_bindgen(method, getter, js_name = successCallback)]
-    pub fn success_callback(this: &IGetRowsParams) -> Function;
+    fn success_callback(this: &IGetRowsParams) -> Function;
 
     #[wasm_bindgen(method, getter, js_name = failCallback)]
-    pub fn fail_callback(this: &IGetRowsParams) -> Function;
+    fn fail_callback(this: &IGetRowsParams) -> Function;
 }
 
 #[derive(FromInterface)]
@@ -37,13 +41,13 @@ pub struct GetRowsParams {
 
 #[wasm_bindgen]
 extern "C" {
-    pub type ISortModelItem;
+    type ISortModelItem;
 
     #[wasm_bindgen(method, getter, js_name = colId)]
-    pub fn col_id(this: &ISortModelItem) -> String;
+    fn col_id(this: &ISortModelItem) -> String;
 
     #[wasm_bindgen(method, getter)]
-    pub fn sort(this: &ISortModelItem) -> SortDirection;
+    fn sort(this: &ISortModelItem) -> SortDirection;
 }
 
 #[derive(Debug, FromInterface)]
@@ -62,51 +66,59 @@ pub enum SortDirection {
 #[wasm_bindgen]
 pub struct DataSource {
     #[wasm_bindgen(readonly, getter_with_clone, js_name = getRows)]
-    pub get_rows: JsValue,
+    pub get_rows: Function,
 }
 
-/// Builder for the datasource used by both `PaginationController` and `InfiniteRowModel`.
+/// Builder for the datasource used by both `PaginationController` and
+/// `InfiniteRowModel`.
 pub struct DataSourceBuilder {
-    /// Callback the grid calls that you implement to fetch rows from the server.
+    /// Callback the grid calls that you implement to fetch rows from the
+    /// server.
     get_rows: Closure<dyn FnMut(IGetRowsParams)>,
     // Missing: optional "destroy" method
 }
 
 impl DataSourceBuilder {
-    pub fn new<F>(mut get_rows: F) -> Self
+    /// Start constructing a new `DataSourceBuilder` by providing a callback
+    /// function which will receive `GetRowsParameters`. This callback is
+    /// called by AG Grid to request new rows from the server.
+    pub fn new<F, Fut>(mut get_rows: F) -> Self
     where
-        F: FnMut(GetRowsParams) -> Result<Vec<RowData>, Box<dyn std::error::Error>> + 'static,
+        F: FnMut(GetRowsParams) -> Fut + 'static,
+        Fut: Future<Output = Result<Vec<RowData>, Box<dyn std::error::Error>>> + 'static,
     {
-        let get_rows: Closure<dyn FnMut(IGetRowsParams)> =
-            Closure::new(move |js_params: IGetRowsParams| {
-                let params = GetRowsParams::from(&js_params);
+        let get_rows = Closure::<dyn FnMut(IGetRowsParams)>::new(move |js_params| {
+            let params = GetRowsParams::from(&js_params);
+            let fut = get_rows(params);
 
-                let row_data = get_rows(params);
-
-                match row_data {
+            let wrapper = async move {
+                match fut.await {
                     Ok(data) => {
-                        // TODO: should have an optional last_row number
-                        let data = serde_wasm_bindgen::to_value(&data)
-                            .expect("failed converting row data to JsValue");
-
+                        let data = data.serialize(&WasmSerializer::json_compatible()).unwrap();
                         js_params
                             .success_callback()
                             .call1(&JsValue::null(), &data)
-                            .expect("failed calling success callback")
+                            .expect("failed calling success callback");
                     }
-                    Err(_) => js_params
-                        .fail_callback()
-                        .call0(&JsValue::null())
-                        .expect("failed calling failure callback"),
+                    Err(e) => {
+                        log(format!("Error calling get_rows callback: {e:?}"));
+                        js_params
+                            .fail_callback()
+                            .call0(&JsValue::null())
+                            .expect("failed calling failure callback");
+                    }
                 };
-            });
+            };
+
+            spawn_local(wrapper)
+        });
 
         Self { get_rows }
     }
 
     pub fn build(self) -> DataSource {
         DataSource {
-            get_rows: self.get_rows.into_js_value(),
+            get_rows: self.get_rows.into_js_value().unchecked_into(),
         }
     }
 }
@@ -131,9 +143,11 @@ pub enum Filter {
     AgTextColumnFilter,
     /// A filter for date comparisons.
     AgDateColumnFilter,
-    /// A filter influenced by how filters work in Microsoft Excel. This is an AG Grid Enterprise feature.
+    /// A filter influenced by how filters work in Microsoft Excel. This is an
+    /// AG Grid Enterprise feature.
     AgSetColumnFilter,
-    /// Enable the default filter. The default is Text Filter for AG Grid Community and Set Filter for AG Grid Enterprise.
+    /// Enable the default filter. The default is Text Filter for AG Grid
+    /// Community and Set Filter for AG Grid Enterprise.
     // #[serde(serialize_with = "serialize_true")]
     True,
     /// Explicitly disable filtering.
@@ -155,6 +169,91 @@ impl Serialize for Filter {
             Filter::True => serializer.serialize_bool(true),
             Filter::False => serializer.serialize_bool(false),
         }
+    }
+}
+
+/// An enumeration of possible values for [`ColumnDef::lock_position`].
+pub enum LockPosition {
+    True,
+    False,
+    Left,
+    Right,
+}
+
+impl Serialize for LockPosition {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match *self {
+            LockPosition::True => serializer.serialize_bool(true),
+            LockPosition::False => serializer.serialize_bool(false),
+            LockPosition::Left => serializer.serialize_str("left"),
+            LockPosition::Right => serializer.serialize_str("right"),
+        }
+    }
+}
+
+/// An enumeration of possible values for [`ColumnDef::pinned`] and
+/// [`ColumnDef::initial_pinned`].
+pub enum PinnedPosition {
+    True,
+    False,
+    Left,
+    Right,
+}
+
+impl Serialize for PinnedPosition {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match *self {
+            PinnedPosition::True => serializer.serialize_bool(true),
+            PinnedPosition::False => serializer.serialize_bool(false),
+            PinnedPosition::Left => serializer.serialize_str("left"),
+            PinnedPosition::Right => serializer.serialize_str("right"),
+        }
+    }
+}
+
+/// An enumeration of possible values for
+/// [`ColumnDef::set_editor_popup_position`].
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum PopupPosition {
+    Over,
+    Under,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum MenuTab {
+    FilterMenuTab,
+    GeneralMenuTab,
+    ColumnsMenuTab,
+}
+
+// TODO: shouldn't we need a trait bound "T: Serialize"?
+#[derive(Serialize)]
+#[serde(untagged)]
+pub(crate) enum OneOrMany<T> {
+    One(T),
+    Many(Vec<T>),
+}
+
+impl Into<OneOrMany<String>> for String {
+    fn into(self) -> OneOrMany<Self> {
+        OneOrMany::One(self)
+    }
+}
+
+impl<T> Into<OneOrMany<T>> for Vec<T>
+where
+    T: Into<OneOrMany<T>>,
+{
+    fn into(self) -> OneOrMany<T> {
+        OneOrMany::Many(self)
     }
 }
 

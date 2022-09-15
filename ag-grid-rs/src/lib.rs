@@ -1,6 +1,7 @@
-//! Wasm bindings for the AG Grid Javascript library.
+//! Rust bindings for the AG Grid Javascript library.
 //!
-//! With this crate, one is able to use the AG Grid datatable library within a Wasm context in Rust.
+//! With this crate, one is able to use the AG Grid datatable library within a
+//! Wasm context in Rust.
 
 mod column;
 mod grid;
