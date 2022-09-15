@@ -242,18 +242,18 @@ pub(crate) enum OneOrMany<T> {
     Many(Vec<T>),
 }
 
-impl Into<OneOrMany<String>> for String {
-    fn into(self) -> OneOrMany<Self> {
-        OneOrMany::One(self)
+impl From<String> for OneOrMany<String> {
+    fn from(v: String) -> Self {
+        Self::One(v)
     }
 }
 
-impl<T> Into<OneOrMany<T>> for Vec<T>
+impl<T> From<Vec<T>> for OneOrMany<T>
 where
     T: Into<OneOrMany<T>>,
 {
-    fn into(self) -> OneOrMany<T> {
-        OneOrMany::Many(self)
+    fn from(v: Vec<T>) -> Self {
+        Self::Many(v)
     }
 }
 

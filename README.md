@@ -47,9 +47,10 @@ fn grid() -> Html {
 
         // Here we are showing that you can also configure the grid after it is built,
         // in the same way that you can in the JavaScript library
-        let data_source = DataSourceBuilder::new(|params: GetRowsParams| async move {
+        let data_source = DataSourceBuilder::new(|params| async move {
             // In reality you would communicate with your backend server here to retrieve the
-            // requested rows
+            // requested rows. `params` is a struct containing information about which rows
+            // the frontend is requesting.
             let row = RowData::new(vec![("make", &"Jaguar"), ("model", &"F-Type")]);
             Ok(vec![row])
         })

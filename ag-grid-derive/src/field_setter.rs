@@ -69,7 +69,7 @@ impl ToTokens for StructReceiver {
     }
 }
 
-#[allow(clippy::large_enum_variant)]
+#[allow(clippy::large_enum_variant, clippy::enum_variant_names)]
 #[derive(Clone)]
 enum FieldType {
     OptionString,
