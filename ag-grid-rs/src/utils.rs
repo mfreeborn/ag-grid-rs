@@ -1,4 +1,5 @@
-use serde::Serializer;
+use serde::{Serialize, Serializer};
+use serde_wasm_bindgen::Serializer as WasmSerializer;
 use wasm_bindgen::prelude::*;
 
 #[allow(unused)]
@@ -17,6 +18,14 @@ where
     serializer.serialize_bool(false)
 }
 
+#[allow(unused)]
+pub fn serialize_null<S>(serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    serializer.serialize_none()
+}
+
 #[allow(clippy::wrong_self_convention)]
 pub trait IntoValue {
     fn into_value(&self) -> serde_json::Value;
@@ -29,6 +38,13 @@ where
     fn into_value(&self) -> serde_json::Value {
         self.to_owned().into()
     }
+}
+
+/// Convert a serializable piece of data to a JSON-compatrible JsValue.
+pub fn to_value<T: Serialize>(data: &T) -> JsValue {
+    let serializer = WasmSerializer::json_compatible();
+    data.serialize(&serializer)
+        .expect("failed to serialize data to JsValue")
 }
 
 #[wasm_bindgen]

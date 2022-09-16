@@ -1,9 +1,11 @@
+use std::collections::HashMap;
+
 use ag_grid_derive::FieldSetter;
 use serde::Serialize;
 use serde_with::skip_serializing_none;
 use wasm_bindgen::prelude::*;
 
-use crate::{Filter, LockPosition, MenuTab, OneOrMany, PinnedPosition, PopupPosition};
+use crate::{Filter, LockPosition, MenuTab, OneOrMany, PinnedPosition, PopupPosition, SortMethod};
 
 #[wasm_bindgen]
 extern "C" {
@@ -15,9 +17,7 @@ extern "C" {
 #[serde(rename_all = "camelCase")]
 pub struct ColumnDef {
     // Base
-    /// The field of the row object to get the cell's data from. Deep references
-    /// into a row object is supported via dot notation, i.e
-    /// 'address.firstLine'.
+    #[field_setter(skip)]
     field: Option<String>,
 
     /// The unique ID to give the column. This is optional. If missing, the ID
@@ -26,12 +26,25 @@ pub struct ColumnDef {
     /// the API for sorting, filtering etc.
     col_id: Option<String>,
 
-    //#[field_setter(skip)]
-    /// A comma separated string or if using the `*_array` method, a vector of
-    /// strings containing ColumnType keys which can be used as a template
-    /// for a column. This helps to reduce duplication of properties when you
-    /// have a lot of common column properties.
+    /// A comma separated string or if using the [`FilterDefs::type_array`]
+    /// method, a vector of strings containing ColumnType keys which can be
+    /// used as a template for a column. This helps to reduce duplication of
+    /// properties when you have a lot of common column properties.
     type_: Option<OneOrMany<String>>,
+
+    // TODO: support callback function
+    /// A function or expression that gets the value to be displayed from your
+    /// data.
+    value_getter: Option<String>,
+
+    // TODO: support callback function
+    /// A function or an expression to format a value. Not used for CSV export
+    /// or copy to clipboard; only for UI cell rendering.
+    value_formatter: Option<String>,
+
+    /// Provide a reference data map to be used to map column values to their
+    /// respective value from the map.
+    ref_data: Option<HashMap<String, String>>,
 
     /// Set to `true` to display a disabled checkbox when row is not selectable
     /// and checkboxes are enabled.
@@ -170,27 +183,85 @@ pub struct ColumnDef {
     // Sort
     /// Set wether the column is sortable.
     sortable: Option<bool>,
-    // TODO
+
+    /// Set the default sorting method.
+    sort: Option<SortMethod>,
+
+    /// The same as [`ColumnDef::sort`], except only applied when creating a new
+    /// column. Not applied when updating column definitions.
+    initial_sort: Option<SortMethod>,
+
+    /// If sorting more than one column by default, specifies order in which the
+    /// sorting should be applied.
+    sort_index: Option<Option<u32>>,
+
+    /// Vector defining the order in which sorting occurs (if sorting is
+    /// enabled). Expects a vector of any permutation of the [`SortMethod`]
+    /// variants.
+    sorting_order: Option<Vec<SortMethod>>,
+
+    /// Set to `true` if you want the unsorted icon to be shown when no sort is
+    /// applied to this column.
+    #[serde(rename = "unSortIcon")]
+    unsort_icon: Option<bool>,
 
     // Spanning
-    // TODO
+    //
+    // TODO: support callback function
+    /// Set the span of the column.
+    col_span: Option<u32>,
+
+    // TODO: support callback function
+    /// Set the span of the row.
+    row_span: Option<u32>,
 
     // Tooltips
-    // TODO
+    /// The field of the tooltip to apply to the cell.
+    tooltip_field: Option<String>, // TODO
 
     // Width
-    // TODO
+    /// Initial width in pixels for the cell.
+    width: Option<u32>,
 
-    // Groups
-    // TODO
+    /// The same as [`ColumnDef::width`], except only applied when creating a
+    /// new column. Not applied when updating column definitions.
+    initial_width: Option<u32>,
 
-    // Groups: Header
-    // TODO
+    /// Minimum width in pixels for the cell.
+    min_width: Option<u32>,
+
+    /// Maxmum width in pixels for the cell.
+    max_width: Option<u32>,
+
+    /// Used instead of width when the goal is to fill the remaining empty space
+    /// of the grid.
+    flex: Option<u32>,
+
+    /// The same as [`ColumnDef::flex`], except only applied when creating a new
+    /// column. Not applied when updating column definitions.
+    initial_flex: Option<u32>,
+
+    /// Set to `true` to allow this column to be resized.
+    resizable: Option<bool>,
+
+    /// Set to `true` if you want this column's width to be fixed during 'size
+    /// to fit' operations.
+    suppress_size_to_fit: Option<bool>,
+
+    /// Set to `true` if you do not want this column to be auto-resizable by
+    /// double clicking it's edge.
+    suppress_auto_size: Option<bool>,
 }
 
 impl ColumnDef {
-    pub fn new() -> Self {
-        Default::default()
+    /// Create a new column definition, specifying the field of the row object
+    /// to get the cell's data from. Deep references into a row object is
+    /// supported via dot notation, i.e 'address.firstLine'.
+    pub fn new<S: AsRef<str>>(field: S) -> Self {
+        Self {
+            field: Some(field.as_ref().to_string()),
+            ..Default::default()
+        }
     }
 }
 
@@ -202,8 +273,7 @@ mod tests {
 
     #[test]
     fn test_serialize_column_def() {
-        let col = ColumnDef::new()
-            .field("make")
+        let col = ColumnDef::new("make")
             .col_id("col_id")
             .sortable(true)
             .filter(Filter::AgDateColumnFilter)

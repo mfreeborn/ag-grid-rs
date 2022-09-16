@@ -3,11 +3,13 @@ use std::future::Future;
 use ag_grid_derive::FromInterface;
 use js_sys::Function;
 use serde::Serialize;
-use serde_wasm_bindgen::Serializer as WasmSerializer;
 use wasm_bindgen::{prelude::*, JsCast};
 use wasm_bindgen_futures::spawn_local;
 
-use crate::{utils::log, RowData};
+use crate::{
+    utils::{log, to_value},
+    RowData,
+};
 
 #[wasm_bindgen]
 extern "C" {
@@ -85,33 +87,36 @@ impl DataSourceBuilder {
     pub fn new<F, Fut>(mut get_rows: F) -> Self
     where
         F: FnMut(GetRowsParams) -> Fut + 'static,
-        Fut: Future<Output = Result<Vec<RowData>, Box<dyn std::error::Error>>> + 'static,
+        Fut: Future<Output = Result<(Vec<RowData>, Option<u32>), Box<dyn std::error::Error>>>
+            + 'static,
     {
-        let get_rows = Closure::<dyn FnMut(IGetRowsParams)>::new(move |js_params| {
-            let params = GetRowsParams::from(&js_params);
-            let fut = get_rows(params);
+        let get_rows =
+            Closure::<dyn FnMut(IGetRowsParams)>::new(move |js_params: IGetRowsParams| {
+                let params = (&js_params).into();
+                let fut = get_rows(params);
 
-            let wrapper = async move {
-                match fut.await {
-                    Ok(data) => {
-                        let data = data.serialize(&WasmSerializer::json_compatible()).unwrap();
-                        js_params
-                            .success_callback()
-                            .call1(&JsValue::null(), &data)
-                            .expect("failed calling success callback");
-                    }
-                    Err(e) => {
-                        log(format!("Error calling get_rows callback: {e:?}"));
-                        js_params
-                            .fail_callback()
-                            .call0(&JsValue::null())
-                            .expect("failed calling failure callback");
-                    }
+                let wrapper = async move {
+                    match fut.await {
+                        Ok((data, last_row_index)) => {
+                            let data = to_value(&data);
+                            let last_row_index = to_value(&last_row_index);
+                            js_params
+                                .success_callback()
+                                .call2(&JsValue::null(), &data, &last_row_index)
+                                .expect("failed calling success callback");
+                        }
+                        Err(e) => {
+                            log(format!("Error calling get_rows callback: {e:?}"));
+                            js_params
+                                .fail_callback()
+                                .call0(&JsValue::null())
+                                .expect("failed calling failure callback");
+                        }
+                    };
                 };
-            };
 
-            spawn_local(wrapper)
-        });
+                spawn_local(wrapper)
+            });
 
         Self { get_rows }
     }
@@ -119,6 +124,29 @@ impl DataSourceBuilder {
     pub fn build(self) -> DataSource {
         DataSource {
             get_rows: self.get_rows.into_js_value().unchecked_into(),
+        }
+    }
+}
+
+/// An enumeration of possible sorting methods.
+// #[derive(Serialize)]
+// #[serde(rename_all = "camelCase")]
+pub enum SortMethod {
+    Asc,
+    Desc,
+    // #[serde(serialize_with = "crate::utils::serialize_null")]
+    Null,
+}
+
+impl Serialize for SortMethod {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match *self {
+            SortMethod::Asc => serializer.serialize_str("asc"),
+            SortMethod::Desc => serializer.serialize_str("desc"),
+            SortMethod::Null => serializer.serialize_none(),
         }
     }
 }
@@ -281,5 +309,12 @@ mod tests {
         assert_eq!(to_value(RowModelType::Viewport).unwrap(), json!("viewport"));
         assert_eq!(to_value(RowModelType::ClientSide).unwrap(), json!("clientSide"));
         assert_eq!(to_value(RowModelType::ServerSide).unwrap(), json!("serverSide"));
+    }
+
+    #[test]
+    fn test_serialize_sort_method() {
+        assert_eq!(to_value(SortMethod::Asc).unwrap(), json!("asc"));
+        assert_eq!(to_value(SortMethod::Desc).unwrap(), json!("desc"));
+        assert_eq!(to_value(SortMethod::Null).unwrap(), json!(null));
     }
 }

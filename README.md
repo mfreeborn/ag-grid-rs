@@ -30,9 +30,8 @@ fn grid() -> Html {
         let grid_div = get_element_by_id("grid-div");
     
         // Define your columns
-        let col_1 = ColumnDef::new().field("make").sortable(true);
-        let col_2 = ColumnDef::new()
-            .field("model")
+        let col_1 = ColumnDef::new("make").sortable(true);
+        let col_2 = ColumnDef::new("model")
             .filter(Filter::AgTextColumnFilter)
             .floating_filter(true);
 
@@ -52,7 +51,7 @@ fn grid() -> Html {
             // requested rows. `params` is a struct containing information about which rows
             // the frontend is requesting.
             let row = RowData::new(vec![("make", &"Jaguar"), ("model", &"F-Type")]);
-            Ok(vec![row])
+            Ok((vec![row], None))
         })
         .build();
 

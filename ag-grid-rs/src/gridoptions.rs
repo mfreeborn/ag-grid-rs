@@ -3,7 +3,7 @@ use serde::Serialize;
 use serde_with::skip_serializing_none;
 use web_sys::HtmlElement;
 
-use crate::{column::ColumnDef, AgGrid, Grid, RowData, RowModelType};
+use crate::{column::ColumnDef, utils::to_value, AgGrid, Grid, RowData, RowModelType};
 
 /// An instance of an AG Grid [`GridOptions`].
 ///
@@ -145,8 +145,7 @@ impl GridOptions {
     /// constructs the underlying JavaScript grid and returns a handle,
     /// [`Grid`], which provides access to the grid APIs.
     pub fn build(self, div: HtmlElement) -> Grid {
-        let grid_options =
-            serde_wasm_bindgen::to_value(&self).expect("failed converting GridOptions to JsValue");
+        let grid_options = to_value(&self);
 
         let js_grid = AgGrid::new(div, grid_options);
 
