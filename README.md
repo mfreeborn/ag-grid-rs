@@ -24,11 +24,12 @@ use yew::prelude::*;
 
 #[function_component(Grid)]
 fn grid() -> Html {
-    // We are using yew_hooks::use_effect_once to initialise the grid once on page load
-    yew_hooks::use_effect_once()
+    // We are using yew_hooks::use_effect_once to initialise the grid once on page
+    // load
+    yew_hooks::use_effect_once(|| {
         // Get the element to which you want to attach the grid
         let grid_div = get_element_by_id("grid-div");
-    
+
         // Define your columns
         let col_1 = ColumnDef::new().field("make").sortable(true);
         let col_2 = ColumnDef::new()
@@ -48,33 +49,33 @@ fn grid() -> Html {
         // Here we are showing that you can also configure the grid after it is built,
         // in the same way that you can in the JavaScript library
         let data_source = DataSourceBuilder::new(|params| async move {
-            // In reality you would communicate with your backend server here to retrieve the
-            // requested rows. `params` is a struct containing information about which rows
-            // the frontend is requesting.
+            // In reality you would communicate with your backend server here to retrieve
+            // the requested rows. `params` is a struct containing information
+            // about which rows the frontend is requesting.
             let row = RowData::new(vec![("make", &"Jaguar"), ("model", &"F-Type")]);
             Ok(vec![row])
         })
         .build();
 
-        // The `Grid` instance we built a few lines up provides access to the underlying grid
-        // and column apis
+        // The `Grid` instance we built a few lines up provides access to the underlying
+        // grid and column apis
         grid.api.set_data_source(data_source);
         || ()
     });
 
     html! {
-        <div id="grid-div" class="ag-theme-alpine", style="height: 500px"/>
+        <div id="grid-div" class="ag-theme-alpine" style="height: 500px"/>
     }
+}
 
-    fn get_element_by_id(id: &str) -> HtmlElement {
-        web_sys::window()
-            .expect("unable to get window object")
-            .document()
-            .expect("unable to get document object")
-            .get_element_by_id("grid-div")
-            .expect("unable to find grid-div")
-            .dyn_into::<HtmlElement>()
-            .unwrap()
-    }
+fn get_element_by_id(id: &str) -> HtmlElement {
+    web_sys::window()
+        .expect("unable to get window object")
+        .document()
+        .expect("unable to get document object")
+        .get_element_by_id(id)
+        .expect("unable to find grid-div")
+        .dyn_into::<HtmlElement>()
+        .unwrap()
 }
 ```
