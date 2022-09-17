@@ -40,7 +40,7 @@ where
     }
 }
 
-/// Convert a serializable piece of data to a JSON-compatrible JsValue.
+/// Convert a serializable piece of data to a JSON-compatible JsValue.
 pub fn to_value<T: Serialize>(data: &T) -> JsValue {
     let serializer = WasmSerializer::json_compatible();
     data.serialize(&serializer)

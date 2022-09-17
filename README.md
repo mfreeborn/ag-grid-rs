@@ -73,7 +73,7 @@ fn get_element_by_id(id: &str) -> HtmlElement {
         .expect("unable to get window object")
         .document()
         .expect("unable to get document object")
-        .get_element_by_id("grid-div")
+        .get_element_by_id(id)
         .expect("unable to find grid-div")
         .dyn_into::<HtmlElement>()
         .unwrap()
