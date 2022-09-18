@@ -25,9 +25,6 @@ impl RowData {
 
 impl ToJsValue for RowData {
     fn to_js_value(&self) -> JsValue {
-        let arr = Array::new();
-        let obj = self.data.to_js_value();
-        arr.push(&obj);
-        arr.into()
+        self.data.to_js_value()
     }
 }

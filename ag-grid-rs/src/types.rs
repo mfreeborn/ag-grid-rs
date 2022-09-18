@@ -115,7 +115,7 @@ impl DataSourceBuilder {
                                 .expect("failed calling success callback");
                         }
                         Err(e) => {
-                            log(format!("Error calling get_rows callback: {e:?}"));
+                            log(&format!("Error calling get_rows callback: {e:?}"));
                             js_params
                                 .fail_callback()
                                 .call0(&JsValue::null())

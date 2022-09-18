@@ -9,7 +9,7 @@ mod gridoptions;
 mod row;
 pub mod traits;
 mod types;
-pub(crate) mod utils;
+pub mod utils;
 
 pub use column::*;
 pub use grid::*;

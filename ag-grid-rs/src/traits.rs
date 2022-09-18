@@ -15,13 +15,87 @@ impl ToJsValue for String {
     }
 }
 
+impl ToJsValue for &'static str {
+    fn to_js_value(&self) -> JsValue {
+        JsValue::from_str(self)
+    }
+}
+
 impl ToJsValue for bool {
     fn to_js_value(&self) -> JsValue {
         JsValue::from_bool(*self)
     }
 }
 
+// It would be a nice exercise to write a macro for these...
+
+impl ToJsValue for usize {
+    fn to_js_value(&self) -> JsValue {
+        JsValue::from_f64(*self as f64)
+    }
+}
+
+impl ToJsValue for isize {
+    fn to_js_value(&self) -> JsValue {
+        JsValue::from_f64(*self as f64)
+    }
+}
+
+impl ToJsValue for u64 {
+    fn to_js_value(&self) -> JsValue {
+        JsValue::from_f64(*self as f64)
+    }
+}
+
+impl ToJsValue for i64 {
+    fn to_js_value(&self) -> JsValue {
+        JsValue::from_f64(*self as f64)
+    }
+}
+
 impl ToJsValue for u32 {
+    fn to_js_value(&self) -> JsValue {
+        JsValue::from_f64(*self as f64)
+    }
+}
+
+impl ToJsValue for i32 {
+    fn to_js_value(&self) -> JsValue {
+        JsValue::from_f64(*self as f64)
+    }
+}
+
+impl ToJsValue for u16 {
+    fn to_js_value(&self) -> JsValue {
+        JsValue::from_f64(*self as f64)
+    }
+}
+
+impl ToJsValue for i16 {
+    fn to_js_value(&self) -> JsValue {
+        JsValue::from_f64(*self as f64)
+    }
+}
+
+impl ToJsValue for u8 {
+    fn to_js_value(&self) -> JsValue {
+        JsValue::from_f64(*self as f64)
+    }
+}
+
+impl ToJsValue for i8 {
+    fn to_js_value(&self) -> JsValue {
+        JsValue::from_f64(*self as f64)
+    }
+}
+
+impl ToJsValue for f32 {
+    fn to_js_value(&self) -> JsValue {
+        JsValue::from_f64(*self as f64)
+    }
+}
+
+impl ToJsValue for f64 {
     fn to_js_value(&self) -> JsValue {
         JsValue::from_f64(*self as f64)
     }

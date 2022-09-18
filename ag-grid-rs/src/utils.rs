@@ -26,5 +26,5 @@ impl Default for Object {
 #[wasm_bindgen]
 extern "C" {
     #[wasm_bindgen(js_namespace = console)]
-    pub(crate) fn log(x: String);
+    pub fn log(v: &str);
 }
