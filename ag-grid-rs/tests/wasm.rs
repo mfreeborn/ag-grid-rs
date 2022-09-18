@@ -1,4 +1,13 @@
-use wasm_bindgen::{prelude::*, JsCast};
+use ag_grid_rs::{traits::ToJsValue, ColumnDef};
+use wasm_bindgen::{prelude::*, JsCast, JsValue};
+use wasm_bindgen_test::*;
+
+#[wasm_bindgen_test]
+fn test_serialize_column() {
+    let col = ColumnDef::new("make").to_js_value();
+
+    assert_eq!(to_obj(col).get("field").as_string().unwrap(), "make");
+}
 
 #[wasm_bindgen]
 extern "C" {
@@ -23,8 +32,6 @@ impl Default for Object {
     }
 }
 
-#[wasm_bindgen]
-extern "C" {
-    #[wasm_bindgen(js_namespace = console)]
-    pub(crate) fn log(x: String);
+fn to_obj(value: JsValue) -> Object {
+    value.unchecked_into::<Object>()
 }

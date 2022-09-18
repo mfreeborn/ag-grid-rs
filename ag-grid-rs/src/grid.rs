@@ -1,7 +1,7 @@
 use wasm_bindgen::prelude::*;
 use web_sys::HtmlElement;
 
-use crate::{ColumnApi, DataSource, GridOptions, RowData};
+use crate::{traits::ToJsValue, ColumnApi, DataSource, GridOptions, RowData};
 
 /// An instance of an AG Grid.
 pub struct Grid {
@@ -58,10 +58,7 @@ impl GridApi {
     }
 
     pub fn set_row_data(&self, row_data: Vec<RowData>) {
-        let row_data = serde_wasm_bindgen::to_value(&row_data)
-            .expect("failed to convert row data into JSValue");
-
-        Self::setRowData(self, row_data)
+        Self::setRowData(self, row_data.to_js_value())
     }
 
     pub fn set_data_source(&self, data_source: DataSource) {

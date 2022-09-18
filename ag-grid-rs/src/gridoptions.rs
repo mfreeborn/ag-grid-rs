@@ -1,9 +1,7 @@
-use ag_grid_derive::FieldSetter;
-use serde::Serialize;
-use serde_with::skip_serializing_none;
+use ag_grid_derive::{FieldSetter, ToJsValue};
 use web_sys::HtmlElement;
 
-use crate::{column::ColumnDef, utils::to_value, AgGrid, Grid, RowData, RowModelType};
+use crate::{column::ColumnDef, traits::ToJsValue as _, AgGrid, Grid, RowData, RowModelType};
 
 /// An instance of an AG Grid [`GridOptions`].
 ///
@@ -14,9 +12,7 @@ use crate::{column::ColumnDef, utils::to_value, AgGrid, Grid, RowData, RowModelT
 /// Grid library.
 ///
 /// [`GridOptions`]: https://www.ag-grid.com/javascript-data-grid/grid-options/
-#[skip_serializing_none]
-#[derive(Serialize, FieldSetter)]
-#[serde(rename_all = "camelCase")]
+#[derive(FieldSetter, ToJsValue)]
 pub struct GridOptions {
     // Accessories
     // All options are enterprise-only
@@ -27,10 +23,10 @@ pub struct GridOptions {
     // Column Definitions
     /// Set the column definitions. Fields set here take precedence over those
     /// set in `default_col_def`.
-    pub column_defs: Option<Vec<ColumnDef>>,
+    column_defs: Option<Vec<ColumnDef>>,
     /// Set the default column definition. Fields set here have lower precedence
     /// than fields set on a per-column basis in `column_defs`.
-    pub default_col_def: Option<ColumnDef>,
+    default_col_def: Option<ColumnDef>,
     // default_col_group_def
     // column_types
     // maintain_column_order
@@ -80,7 +76,7 @@ pub struct GridOptions {
 
     // Pagination
     /// Set whether pagination is enabled.
-    pub pagination: Option<bool>,
+    pagination: Option<bool>,
     // TODO
 
     // Pivot and Aggregation
@@ -100,18 +96,18 @@ pub struct GridOptions {
 
     // RowModel
     /// Sets the row model type.
-    pub row_model_type: Option<RowModelType>,
+    row_model_type: Option<RowModelType>,
     // get_row_id
 
     // RowModel: Client Side
     /// Set the row data.
-    pub row_data: Option<Vec<RowData>>,
+    row_data: Option<Vec<RowData>>,
     // TODO
 
     // RowModel: Infinite
     /// How many rows for each block in the store, i.e. how many rows returned
     /// from the server at a time.
-    pub cache_block_size: Option<u32>,
+    cache_block_size: Option<u32>,
     // TODO
 
     // RowModel: Server Side
@@ -145,7 +141,7 @@ impl GridOptions {
     /// constructs the underlying JavaScript grid and returns a handle,
     /// [`Grid`], which provides access to the grid APIs.
     pub fn build(self, div: HtmlElement) -> Grid {
-        let grid_options = to_value(&self);
+        let grid_options = self.to_js_value();
 
         let js_grid = AgGrid::new(div, grid_options);
 

@@ -1,20 +1,17 @@
-use std::collections::HashMap;
-
-use ag_grid_derive::FieldSetter;
-use serde::Serialize;
-use serde_with::skip_serializing_none;
+use ag_grid_derive::{FieldSetter, ToJsValue};
 use wasm_bindgen::prelude::*;
 
-use crate::{Filter, LockPosition, MenuTab, OneOrMany, PinnedPosition, PopupPosition, SortMethod};
+use crate::{
+    Filter, IHeaderValueGetterParams, LockPosition, MenuTab, OneOrMany, PinnedPosition,
+    PopupPosition, SortMethod,
+};
 
 #[wasm_bindgen]
 extern "C" {
     pub type ColumnApi;
 }
 
-#[skip_serializing_none]
-#[derive(Serialize, FieldSetter)]
-#[serde(rename_all = "camelCase")]
+#[derive(FieldSetter, ToJsValue)]
 pub struct ColumnDef {
     // Base
     #[field_setter(skip)]
@@ -44,7 +41,7 @@ pub struct ColumnDef {
 
     /// Provide a reference data map to be used to map column values to their
     /// respective value from the map.
-    ref_data: Option<HashMap<String, String>>,
+    //ref_data: Option<HashMap<String, String>>,
 
     /// Set to `true` to display a disabled checkbox when row is not selectable
     /// and checkboxes are enabled.
@@ -105,6 +102,9 @@ pub struct ColumnDef {
     /// specified, the field name will be used as the header name.
     header_name: Option<String>,
 
+    /// Get the value for display in the header.
+    header_value_getter: Option<Closure<dyn FnMut(IHeaderValueGetterParams) -> String>>,
+
     /// Tooltip for the column header.
     header_tooltip: Option<String>,
 
@@ -138,7 +138,7 @@ pub struct ColumnDef {
 
     // Pinned
     /// Pin a column to one side: right or left. A value of `True` is converted
-    /// to 'Left'.
+    /// to `Left`.
     pinned: Option<PinnedPosition>,
 
     /// Same as [`ColumnDef::pinned`], except only applied when creating a new
@@ -202,7 +202,7 @@ pub struct ColumnDef {
 
     /// Set to `true` if you want the unsorted icon to be shown when no sort is
     /// applied to this column.
-    #[serde(rename = "unSortIcon")]
+    #[js_value(rename = "unSortIcon")]
     unsort_icon: Option<bool>,
 
     // Spanning
@@ -262,36 +262,5 @@ impl ColumnDef {
             field: Some(field.as_ref().to_string()),
             ..Default::default()
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use serde_json::{json, to_value};
-
-    use super::*;
-
-    #[test]
-    fn test_serialize_column_def() {
-        let col = ColumnDef::new("make")
-            .col_id("col_id")
-            .sortable(true)
-            .filter(Filter::AgDateColumnFilter)
-            .floating_filter(false)
-            .type_("hi".to_string())
-            .type_("hi")
-            .type_array(vec!["hi".to_string()])
-            .type_array(vec!["hi", "there"]);
-
-        let expected = json!({
-            "field": "make",
-            "colId": "col_id",
-            "sortable": true,
-            "filter": "agDateColumnFilter",
-            "floatingFilter": false,
-            "type": ["hi", "there"]
-        });
-
-        assert_eq!(to_value(col).unwrap(), expected);
     }
 }

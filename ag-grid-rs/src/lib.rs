@@ -7,6 +7,7 @@ mod column;
 mod grid;
 mod gridoptions;
 mod row;
+pub mod traits;
 mod types;
 pub(crate) mod utils;
 
