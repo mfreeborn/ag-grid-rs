@@ -5,7 +5,11 @@ use js_sys::Function;
 use wasm_bindgen::{prelude::*, JsCast};
 use wasm_bindgen_futures::spawn_local;
 
-use crate::{traits::ToJsValue as ToJsValueTrait, utils::log, RowData};
+use crate::{
+    traits::ToJsValue as ToJsValueTrait,
+    utils::{log, Object},
+    RowData,
+};
 
 #[wasm_bindgen]
 extern "C" {
@@ -78,6 +82,14 @@ pub enum SortDirection {
 pub struct DataSource {
     #[wasm_bindgen(readonly, getter_with_clone, js_name = getRows)]
     pub get_rows: Function,
+}
+
+impl ToJsValueTrait for DataSource {
+    fn to_js_value(&self) -> JsValue {
+        let obj = Object::new();
+        obj.set("getRows", JsValue::from(&self.get_rows).to_owned());
+        obj.into()
+    }
 }
 
 /// Builder for the datasource used by both `PaginationController` and

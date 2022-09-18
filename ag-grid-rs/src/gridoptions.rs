@@ -1,7 +1,9 @@
 use ag_grid_derive::{FieldSetter, ToJsValue};
 use web_sys::HtmlElement;
 
-use crate::{column::ColumnDef, traits::ToJsValue as _, AgGrid, Grid, RowData, RowModelType};
+use crate::{
+    column::ColumnDef, traits::ToJsValue as _, AgGrid, DataSource, Grid, RowData, RowModelType,
+};
 
 /// An instance of an AG Grid [`GridOptions`].
 ///
@@ -102,12 +104,35 @@ pub struct GridOptions {
     // RowModel: Client Side
     /// Set the row data.
     row_data: Option<Vec<RowData>>,
-    // TODO
 
     // RowModel: Infinite
+    datasource: Option<DataSource>,
+    /// How many extra blank rows to display to the user at the end of the
+    /// dataset, which sets the vertical scroll and then allows the grid to
+    /// request viewing more rows of data.
+    cache_overflow_size: Option<u32>,
+
+    /// How many requests to hit the server with concurrently. If the max is
+    /// reached, requests are queued. Set to `-1` for no maximum restriction on
+    /// requests.
+    max_concurrent_datasource_requests: Option<i32>,
+
     /// How many rows for each block in the store, i.e. how many rows returned
     /// from the server at a time.
     cache_block_size: Option<u32>,
+
+    /// How many blocks to keep in the store. Default is no limit, so every
+    /// requested block is kept. Use this if you have memory concerns, and
+    /// blocks that were least recently viewed will be purged when the limit is
+    /// hit. The grid will additionally make sure it has all the blocks needed
+    /// to display what is currently visible, in case this property is set to a
+    /// low value.
+    max_blocks_in_cache: Option<u32>,
+
+    /// How many extra blank rows to display to the user at the end of the
+    /// dataset, which sets the vertical scroll and then allows the grid to
+    /// request viewing more rows of data.
+    infinite_initial_row_count: Option<u32>,
     // TODO
 
     // RowModel: Server Side
