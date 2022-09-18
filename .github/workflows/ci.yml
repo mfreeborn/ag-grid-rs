@@ -35,6 +35,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
+          targets: "wasm32-unknown-unknown"
       - run: cargo clippy -- -D warnings
   
   test:
@@ -43,6 +44,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: "wasm32-unknown-unknown"
       - run: cargo test
 
   code-coverage:
@@ -53,6 +56,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: llvm-tools-preview
+          targets: "wasm32-unknown-unknown"
       - uses: taiki-e/install-action@cargo-llvm-cov
       - run: cargo llvm-cov --workspace --lcov --output-path lcov.info
       - uses: codecov/codecov-action@v3
