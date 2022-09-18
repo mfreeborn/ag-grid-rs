@@ -52,10 +52,20 @@ extern "C" {
     fn sort(this: &ISortModelItem) -> SortDirection;
 }
 
-#[derive(Debug, FromInterface)]
+#[derive(Debug)]
 pub struct SortModelItem {
     pub col_id: String,
     pub sort: SortDirection,
+}
+
+impl From<&ISortModelItem> for SortModelItem {
+    fn from(i: &ISortModelItem) -> Self {
+        log(&format!("{:?}", &i.sort()));
+        Self {
+            col_id: i.col_id(),
+            sort: i.sort(),
+        }
+    }
 }
 
 #[wasm_bindgen]
