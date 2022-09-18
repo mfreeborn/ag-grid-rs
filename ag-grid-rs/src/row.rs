@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use js_sys::Array;
 use wasm_bindgen::JsValue;
 
 use crate::traits::ToJsValue;
