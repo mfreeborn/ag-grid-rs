@@ -46,7 +46,8 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: "wasm32-unknown-unknown"
-      - run: cargo test
+      - run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+      - run: cd ag-grid-rs/ && wasm-pack test --node
 
   code-coverage:
     name: Code Coverage
