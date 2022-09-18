@@ -34,11 +34,11 @@ extern "C" {
     fn fail_callback(this: &IGetRowsParams) -> Function;
 }
 
-#[derive(FromInterface)]
+#[derive(FromInterface, Debug)]
 pub struct GetRowsParams {
     pub start_row: u32,
     pub end_row: u32,
-    pub sort_model: std::vec::Vec<SortModelItem>,
+    pub sort_model: Vec<SortModelItem>,
 }
 
 #[wasm_bindgen]
