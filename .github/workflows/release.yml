@@ -17,8 +17,10 @@ jobs:
     - run: cargo login ${{ env.CRATES_IO_TOKEN }}
       env:
         CRATES_IO_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
+    - run: cargo publish --allow-dirty -p ag-grid-core
+    - run: sleep 10
     - run: cargo publish --allow-dirty -p ag-grid-derive
-    - run: sleep 20
+    - run: sleep 10
     - run: cargo publish --allow-dirty -p ag-grid-rs
 
   create-gh-release:
