@@ -9,7 +9,7 @@ documentation = "https://docs.rs/ag-grid-rs/latest/ag_grid_rs/"
 readme = "../README.md"
 homepage = "https://github.com/mfreeborn/ag-grid-rs"
 repository = "https://github.com/mfreeborn/ag-grid-rs"
-keywords = ["wasm", "yew", "datatable", "frontend"]
+keywords = ["wasm", "yew", "datatable", "frontend", "table"]
 categories = ["wasm", "web-programming", "api-bindings"]
 
 [dependencies]
