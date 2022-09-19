@@ -17,55 +17,69 @@ ag-grid-rs aims to follow the API of AG Grid in an unsurprising way, and general
 An example using the `Yew` frontend framework is shown below.
 
 ```rust
-use ag_grid_rs::{ColumnDef, DataSourceBuilder, Filter, GridOptions, RowData, RowModelType};
+use ag_grid_rs::{ColumnDef, DataSourceBuilder, GridOptions, RowModelType,
+ToJsValue};
+use gloo_net::http::Request;
+use serde::Deserialize;
 use wasm_bindgen::JsCast;
 use web_sys::HtmlElement;
 use yew::prelude::*;
 
-#[function_component(Grid)]
-fn grid() -> Html {
-    // We are using yew_hooks::use_effect_once to initialise the grid once on page
-    // load
-    yew_hooks::use_effect_once(|| {
-        // Get the element to which you want to attach the grid
-        let grid_div = get_element_by_id("grid-div");
+#[function_component(About)]
+pub fn about() -> Html {
+    // Fire the hook just once on initial load
+    use_effect_with_deps(
+        |_| {
+            // Get the element to which you want to attach the grid
+            let grid_div = get_element_by_id("grid-div");
+            // Define your columns
+            let field_names = vec!["athlete", "age", "country", "year"];
+            let cols = field_names
+                .iter()
+                .map(|name| ColumnDef::new(name).sortable(true))
+                .collect();
 
-        // Define your columns
-        let col_1 = ColumnDef::new().field("make").sortable(true);
-        let col_2 = ColumnDef::new()
-            .field("model")
-            .filter(Filter::AgTextColumnFilter)
-            .floating_filter(true);
+            // Create your datasource, including a closure that will retunr rows from the
+            // server
+            let data_source = DataSourceBuilder::new(|params| async move {
+                // `params` contains information from AG Grid about which rows to get, how to
+                // sort the data, etc
+                let data_url = "https://www.ag-grid.com/example-assets/olympic-winners.json";
+                let rows = gloo_net::http::Request::get(data_url)
+                    .send()
+                    .await?
+                    .json::<Vec<JsonData>>()
+                    .await?;
 
-        // The Grid itself is constructed from the GridOptions builder struct
-        let grid = GridOptions::new()
-            .column_defs(vec![col_1, col_2])
-            .row_model_type(RowModelType::Infinite)
-            .pagination(true)
-            .cache_block_size(100)
-            // The `build` finaliser consumes the `GridOptions` and returns a `Grid` instance
-            .build(grid_div);
+                Ok((rows, None))
+            })
+            .build();
 
-        // Here we are showing that you can also configure the grid after it is built,
-        // in the same way that you can in the JavaScript library
-        let data_source = DataSourceBuilder::new(|params| async move {
-            // In reality you would communicate with your backend server here to retrieve
-            // the requested rows. `params` is a struct containing information
-            // about which rows the frontend is requesting.
-            let row = RowData::new(vec![("make", &"Jaguar"), ("model", &"F-Type")]);
-            Ok(vec![row])
-        })
-        .build();
+            let grid = GridOptions::<JsonData>::new()
+                .column_defs(cols)
+                .row_model_type(RowModelType::Infinite)
+                .datasource(data_source)
+                .build(grid_div);
 
-        // The `Grid` instance we built a few lines up provides access to the underlying
-        // grid and column apis
-        grid.api.set_data_source(data_source);
-        || ()
-    });
+            // `grid` now provides a handle to the grid and column APIs
+            || ()
+        },
+        (),
+    );
 
     html! {
-        <div id="grid-div" class="ag-theme-alpine" style="height: 500px"/>
+        <>
+            <div id="grid-div" class="ag-theme-alpine" style="height: 500px"/>
+        </>
     }
+}
+
+#[derive(ToJsValue, Deserialize)]
+struct JsonData {
+    athlete: String,
+    age: Option<usize>,
+    country: String,
+    year: usize,
 }
 
 fn get_element_by_id(id: &str) -> HtmlElement {

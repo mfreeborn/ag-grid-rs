@@ -3,7 +3,7 @@
 //! With this crate, one is able to use the AG Grid datatable library within a
 //! Wasm context in Rust.
 //!
-//! A simple example demonstrating server-side data fetching using `yew` and
+//! A simple example demonstrating server-side data fetching using `Yew` and
 //! related dependencies is as follows:
 //!
 //! ```rust
