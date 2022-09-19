@@ -1,14 +1,14 @@
 [package]
 name = "ag-grid-rs"
-version = "0.1.0"  # remember to update ag-grid-derive at the same time
+version = "0.2.0"  # remember to update ag-grid-{derive | core} at the same time
 authors = ["Michael Freeborn <michaelfreeborn1@gmail.com>"]
 edition = "2021"
 description = "Wasm bindings for AG Grid"
 license = "Apache-2.0 OR MIT"
 
 [dependencies]
-ag-grid-core = { version = "0.1.0", path = "../ag-grid-core" }
-ag-grid-derive = { version = "0.1.0", path = "../ag-grid-derive" }
+ag-grid-core = { version = "0.2.0", path = "../ag-grid-core" }
+ag-grid-derive = { version = "0.2.0", path = "../ag-grid-derive" }
 js-sys = "0.3" 
 wasm-bindgen = "0.2.83"
 wasm-bindgen-futures = "0.4.33"

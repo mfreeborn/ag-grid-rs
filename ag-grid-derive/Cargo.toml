@@ -1,6 +1,6 @@
 [package]
 name = "ag-grid-derive"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Michael Freeborn <michaelfreeborn1@gmail.com>"]
 edition = "2021"
 description = "Internal proc-macro library for ag-grid-rs"
@@ -10,7 +10,7 @@ license = "Apache-2.0 OR MIT"
 proc-macro = true
 
 [dependencies]
-ag-grid-core = { version = "0.1.0", path = "../ag-grid-core" }
+ag-grid-core = { version = "0.2.0", path = "../ag-grid-core" }
 convert_case = "0.6.0"
 darling = "0.14.1"
 proc-macro-crate = "1.2.1"
