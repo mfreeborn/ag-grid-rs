@@ -5,6 +5,12 @@ authors = ["Michael Freeborn <michaelfreeborn1@gmail.com>"]
 edition = "2021"
 description = "Wasm bindings for AG Grid"
 license = "Apache-2.0 OR MIT"
+documentation = "https://docs.rs/ag-grid-rs/latest/ag_grid_rs/"
+readme = "README.md"
+homepage = "https://github.com/mfreeborn/ag-grid-rs"
+repository = "https://github.com/mfreeborn/ag-grid-rs"
+keywords = ["wasm", "yew", "datatable", "frontend"]
+categories = ["wasm", "web-programming", "api-bindings"]
 
 [dependencies]
 ag-grid-core = { version = "0.2.0", path = "../ag-grid-core" }
