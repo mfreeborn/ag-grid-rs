@@ -1,17 +1,22 @@
 use ag_grid_derive::{FieldSetter, ToJsValue};
 use wasm_bindgen::prelude::*;
 
-use crate::{
+use crate::types::{
     Filter, IHeaderValueGetterParams, LockPosition, MenuTab, OneOrMany, PinnedPosition,
     PopupPosition, SortMethod,
 };
 
 #[wasm_bindgen]
 extern "C" {
+    /// A handle for the AG Grid [`Column API`].
+    ///
+    /// [`Column API`]: https://www.ag-grid.com/javascript-data-grid/column-api/
     pub type ColumnApi;
 }
 
+/// A customisable struct for defining a column.
 #[derive(FieldSetter, ToJsValue)]
+#[js_value(skip_serializing_none)]
 pub struct ColumnDef {
     // Base
     #[field_setter(skip)]
@@ -23,7 +28,7 @@ pub struct ColumnDef {
     /// the API for sorting, filtering etc.
     col_id: Option<String>,
 
-    /// A comma separated string or if using the [`FilterDefs::type_array`]
+    /// A comma separated string or if using the [`ColumnDef::type_array`]
     /// method, a vector of strings containing ColumnType keys which can be
     /// used as a template for a column. This helps to reduce duplication of
     /// properties when you have a lot of common column properties.
@@ -52,13 +57,13 @@ pub struct ColumnDef {
     /// Set to `true` for this column to be hidden.
     hide: Option<bool>,
 
-    /// Same as [`hide`], except only applied when creating a new column. Not
-    /// applied when updating column definitions.
+    /// Same as [`ColumnDef::hide`], except only applied when creating a new
+    /// column. Not applied when updating column definitions.
     initial_hide: Option<bool>,
 
     /// Set to `true` to block making column visible/hidden via the UI (API will
     /// still work).
-    lock_visibile: Option<bool>,
+    lock_visible: Option<bool>,
 
     /// Lock a column to position to `Left` or `Right` to always have this
     /// column displayed in that position. `True` is treated as `Left`.
@@ -158,7 +163,7 @@ pub struct ColumnDef {
     auto_height: Option<bool>,
 
     /// Set to `true` to have the text wrap inside the cell - typically used
-    /// with [`Column_def::auto_height`].
+    /// with [`ColumnDef::auto_height`].
     wrap_text: Option<bool>,
 
     /// Set to `true` to flash a cell when it's refreshed.

@@ -1,4 +1,4 @@
-use wasm_bindgen::{prelude::*, JsCast};
+use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
 extern "C" {
@@ -13,6 +13,7 @@ extern "C" {
 
 impl Object {
     pub fn new() -> Self {
+        use wasm_bindgen::JsCast;
         js_sys::Object::new().unchecked_into::<Self>()
     }
 }

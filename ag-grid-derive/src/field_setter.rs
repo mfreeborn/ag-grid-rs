@@ -189,11 +189,11 @@ impl FieldReceiver {
                 let params = Ident::new(&params, proc_macro2::Span::call_site());
                 (
                     quote![mut],
-                    quote![impl FnMut(crate::#params) -> String + 'static],
+                    quote![impl FnMut(crate::types::#params) -> String + 'static],
                     quote![wasm_bindgen::closure::Closure::<
-                        dyn FnMut(crate::#js_params) -> String,
+                        dyn FnMut(crate::types::#js_params) -> String,
                     >::new(
-                        move |js_params: crate::#js_params| value(
+                        move |js_params: crate::types::#js_params| value(
                             (&js_params).into()
                         )
                     )],

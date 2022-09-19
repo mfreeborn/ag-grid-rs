@@ -1,21 +1,28 @@
-use ag_grid_derive::{FieldSetter, ToJsValue};
+use ag_grid_derive::FieldSetter;
 use web_sys::HtmlElement;
 
 use crate::{
-    column::ColumnDef, traits::ToJsValue as _, AgGrid, DataSource, Grid, RowData, RowModelType,
+    column::ColumnDef,
+    convert::ToJsValue,
+    grid::AgGrid,
+    types::{DataSource, RowModelType},
+    Grid, ToJsValue as ToJsValueMacro,
 };
-
 /// An instance of an AG Grid [`GridOptions`].
 ///
 /// With this struct, users can specify the initial options for their grid,
-/// before calling the [`build()`] method to receive an instance of [`Grid`].
-/// The various options are fully customisable using the builder pattern, so you
-/// only need to specify what you need. The options mirror those used in the AG
-/// Grid library.
+/// before calling the [`GridOptions::build()`] method to receive an instance of
+/// [`Grid`]. The various options are fully customisable using the builder
+/// pattern, so you only need to specify what you need. The options mirror those
+/// used in the AG Grid library.
 ///
 /// [`GridOptions`]: https://www.ag-grid.com/javascript-data-grid/grid-options/
-#[derive(FieldSetter, ToJsValue)]
-pub struct GridOptions {
+#[derive(FieldSetter, ToJsValueMacro)]
+#[js_value(skip_serializing_none)]
+pub struct GridOptions<T>
+where
+    T: ToJsValue,
+{
     // Accessories
     // All options are enterprise-only
 
@@ -103,7 +110,7 @@ pub struct GridOptions {
 
     // RowModel: Client Side
     /// Set the row data.
-    row_data: Option<Vec<RowData>>,
+    row_data: Option<Vec<T>>,
 
     // RowModel: Infinite
     datasource: Option<DataSource>,
@@ -157,7 +164,10 @@ pub struct GridOptions {
     // TODO
 }
 
-impl GridOptions {
+impl<T> GridOptions<T>
+where
+    T: ToJsValue,
+{
     pub fn new() -> Self {
         Default::default()
     }
@@ -171,7 +181,6 @@ impl GridOptions {
         let js_grid = AgGrid::new(div, grid_options);
 
         Grid {
-            grid_options: self,
             api: js_grid.gridOptions().api(),
             column_api: js_grid.gridOptions().columnApi(),
         }

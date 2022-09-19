@@ -1,15 +1,10 @@
 use std::future::Future;
 
-use ag_grid_derive::{FromInterface, ToJsValue};
+use ag_grid_core::{convert::ToJsValue, imports::log};
+use ag_grid_derive::{FromInterface, ToJsValue as ToJsValueMacro};
 use js_sys::Function;
 use wasm_bindgen::{prelude::*, JsCast};
 use wasm_bindgen_futures::spawn_local;
-
-use crate::{
-    traits::ToJsValue as ToJsValueTrait,
-    utils::{log, Object},
-    RowData,
-};
 
 #[wasm_bindgen]
 extern "C" {
@@ -34,10 +29,15 @@ extern "C" {
     fn fail_callback(this: &IGetRowsParams) -> Function;
 }
 
+/// Parameters passed to the callback function in [`DataSourceBuilder::new`].
 #[derive(FromInterface, Debug)]
 pub struct GetRowsParams {
+    /// The first row index to get.
     pub start_row: u32,
+    /// The first row index to *not* get.
     pub end_row: u32,
+    /// A vector of `[SortModelItem]` describing how the data is expected to be
+    /// sorted.
     pub sort_model: Vec<SortModelItem>,
 }
 
@@ -52,20 +52,13 @@ extern "C" {
     fn sort(this: &ISortModelItem) -> SortDirection;
 }
 
-#[derive(Debug)]
+/// Details of how to sort the requested data.
+#[derive(Debug, FromInterface)]
 pub struct SortModelItem {
+    /// Which column to sort.
     pub col_id: String,
+    /// How the column should be sorted.
     pub sort: SortDirection,
-}
-
-impl From<&ISortModelItem> for SortModelItem {
-    fn from(i: &ISortModelItem) -> Self {
-        log(&format!("{:?}", &i.sort()));
-        Self {
-            col_id: i.col_id(),
-            sort: i.sort(),
-        }
-    }
 }
 
 #[wasm_bindgen]
@@ -76,50 +69,50 @@ extern "C" {
     pub(crate) fn location(this: &IHeaderValueGetterParams) -> Option<String>;
 }
 
+/// Parameters passed to the closure in
+/// [`ColumnDef::header_value_getter`][`crate::ColumnDef::header_value_getter`].
 #[derive(Debug, FromInterface)]
 pub struct HeaderValueGetterParams {
+    /// Where the column is going to appear.
     pub location: Option<String>,
 }
 
-#[derive(Debug)]
+/// Possible directions for which to sort data.
 #[wasm_bindgen]
+#[derive(Debug)]
 pub enum SortDirection {
-    Asc,
-    Desc,
+    Asc = "asc",
+    Desc = "desc",
 }
 
+/// A struct passed to the JavaScript grid which is used by AG Grid to fetch the
+/// requested data from the server.
 #[wasm_bindgen]
+#[derive(ToJsValueMacro)]
 pub struct DataSource {
     #[wasm_bindgen(readonly, getter_with_clone, js_name = getRows)]
     pub get_rows: Function,
 }
 
-impl ToJsValueTrait for DataSource {
-    fn to_js_value(&self) -> JsValue {
-        let obj = Object::new();
-        obj.set("getRows", JsValue::from(&self.get_rows).to_owned());
-        obj.into()
-    }
-}
-
-/// Builder for the datasource used by both `PaginationController` and
-/// `InfiniteRowModel`.
+/// Builder for the [`DataSource`].
 pub struct DataSourceBuilder {
-    /// Callback the grid calls that you implement to fetch rows from the
-    /// server.
+    // Callback the grid calls that the user implements to fetch rows from the
+    // server.
     get_rows: Closure<dyn FnMut(IGetRowsParams)>,
-    // Missing: optional "destroy" method
+    // row_count is deprecated. Use GridOptions.infiniteInitialRowCount instead:
+    // https://github.com/ag-grid/ag-grid/blob/7358e4286fd52946c4fe24bd26b5fbe7fd3b22d4/community-modules/core/src/ts/interfaces/iDatasource.ts#L7-L9
+    //row_count: Option<u32>,
 }
 
 impl DataSourceBuilder {
     /// Start constructing a new `DataSourceBuilder` by providing a callback
-    /// function which will receive `GetRowsParameters`. This callback is
+    /// function which will receive [`GetRowsParams`]. This callback is
     /// called by AG Grid to request new rows from the server.
-    pub fn new<F, Fut>(mut get_rows: F) -> Self
+    pub fn new<F, Fut, T>(mut get_rows: F) -> Self
     where
         F: FnMut(GetRowsParams) -> Fut + 'static,
-        Fut: Future<Output = Result<(Vec<RowData>, Option<u32>), Box<dyn std::error::Error>>>
-            + 'static,
+        Fut: Future<Output = Result<(Vec<T>, Option<u32>), Box<dyn std::error::Error>>> + 'static,
+        T: ToJsValue,
     {
         let get_rows =
             Closure::<dyn FnMut(IGetRowsParams)>::new(move |js_params: IGetRowsParams| {
@@ -152,6 +145,7 @@ impl DataSourceBuilder {
         Self { get_rows }
     }
 
+    /// Finalise construction of a [`DataSource`].
     pub fn build(self) -> DataSource {
         DataSource {
             get_rows: self.get_rows.into_js_value().unchecked_into(),
@@ -159,17 +153,19 @@ impl DataSourceBuilder {
     }
 }
 
-/// An enumeration of possible sorting methods.
-#[derive(ToJsValue)]
+/// Allowed values for [`ColumnDef::sort`][crate::ColumnDef::sort] and related
+/// methods.
+#[derive(ToJsValueMacro)]
 pub enum SortMethod {
     Asc,
     Desc,
-    // #[serde(serialize_with = "crate::utils::serialize_null")]
+    #[js_value(serialize_as = "null")]
     Null,
 }
 
-/// Options for the row model type.
-#[derive(ToJsValue)]
+/// Allowed values for
+/// [`GridOptions::row_model_type`][crate::GridOptions::row_model_type].
+#[derive(ToJsValueMacro)]
 pub enum RowModelType {
     Infinite,
     Viewport,
@@ -177,8 +173,8 @@ pub enum RowModelType {
     ServerSide,
 }
 
-/// Pre-specified filters which can be applied to columns.
-#[derive(ToJsValue)]
+/// Allowed values for [`ColumnDef::filter`][crate::ColumnDef::filter].
+#[derive(ToJsValueMacro)]
 pub enum Filter {
     /// A filter for number comparisons.
     AgNumberColumnFilter,
@@ -191,42 +187,49 @@ pub enum Filter {
     AgSetColumnFilter,
     /// Enable the default filter. The default is Text Filter for AG Grid
     /// Community and Set Filter for AG Grid Enterprise.
-    // #[serde(serialize_with = "serialize_true")]
+    #[js_value(serialize_as = "true")]
     True,
     /// Explicitly disable filtering.
-    // #[serde(serialize_with = "serialize_false")]
+    #[js_value(serialize_as = "false")]
     False,
     // TODO: Custom(FilterComponent)
 }
 
-/// An enumeration of possible values for [`ColumnDef::lock_position`].
-#[derive(ToJsValue)]
+/// Allowed values for
+/// [`ColumnDef::lock_position`][crate::ColumnDef::lock_position].
+#[derive(ToJsValueMacro)]
 pub enum LockPosition {
+    #[js_value(serialize_as = "true")]
     True,
     False,
     Left,
     Right,
 }
 
-/// An enumeration of possible values for [`ColumnDef::pinned`] and
-/// [`ColumnDef::initial_pinned`].
-#[derive(ToJsValue)]
+/// Allowed values for
+/// [`ColumnDef::pinned`][crate::ColumnDef::pinned] and
+/// [`ColumnDef::initial_pinned`][crate::ColumnDef::initial_pinned].
+#[derive(ToJsValueMacro)]
 pub enum PinnedPosition {
+    #[js_value(serialize_as = "true")]
     True,
     False,
     Left,
     Right,
 }
 
-/// An enumeration of possible values for
-/// [`ColumnDef::set_editor_popup_position`].
-#[derive(ToJsValue)]
+/// Allowed values for
+/// [`ColumnDef::cell_editor_popup_position`][crate::ColumnDef::cell_editor_popup_position].
+#[derive(ToJsValueMacro)]
 pub enum PopupPosition {
     Over,
     Under,
 }
 
-#[derive(ToJsValue)]
+/// Allowed values for
+/// [`ColumnDef::menu_tabs`][crate::ColumnDef::menu_tabs].
+#[allow(clippy::enum_variant_names)]
+#[derive(ToJsValueMacro)]
 pub enum MenuTab {
     FilterMenuTab,
     GeneralMenuTab,
@@ -235,17 +238,17 @@ pub enum MenuTab {
 
 pub(crate) enum OneOrMany<T>
 where
-    T: ToJsValueTrait,
+    T: ToJsValue,
 {
     One(T),
     Many(Vec<T>),
 }
 
-impl<T> OneOrMany<T>
+impl<T> ToJsValue for OneOrMany<T>
 where
-    T: ToJsValueTrait,
+    T: ToJsValue,
 {
-    pub(crate) fn to_js_value(&self) -> JsValue {
+    fn to_js_value(&self) -> JsValue {
         match self {
             Self::One(v) => v.to_js_value(),
             Self::Many(v) => v.to_js_value(),
@@ -255,7 +258,7 @@ where
 
 impl<T> From<T> for OneOrMany<T>
 where
-    T: ToJsValueTrait,
+    T: ToJsValue,
 {
     fn from(v: T) -> Self {
         Self::One(v)
@@ -264,7 +267,7 @@ where
 
 impl<T> From<Vec<T>> for OneOrMany<T>
 where
-    T: Into<OneOrMany<T>> + ToJsValueTrait,
+    T: Into<OneOrMany<T>> + ToJsValue,
 {
     fn from(v: Vec<T>) -> Self {
         Self::Many(v)

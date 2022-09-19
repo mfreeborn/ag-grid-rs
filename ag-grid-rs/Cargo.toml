@@ -7,6 +7,7 @@ description = "Wasm bindings for AG Grid"
 license = "Apache-2.0 OR MIT"
 
 [dependencies]
+ag-grid-core = { version = "0.1.0", path = "../ag-grid-core" }
 ag-grid-derive = { version = "0.1.0", path = "../ag-grid-derive" }
 js-sys = "0.3" 
 wasm-bindgen = "0.2.83"

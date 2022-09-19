@@ -1,5 +1,6 @@
 [workspace]
 members = [
     "ag-grid-rs",
-    "ag-grid-derive"
+    "ag-grid-derive",
+    "ag-grid-core",
 ]

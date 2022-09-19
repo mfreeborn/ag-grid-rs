@@ -1,11 +1,17 @@
+//! Access to the `ToJsValue` trait for converting types into
+//! `wasm_bindgen::JsValue`s.
+
 use std::collections::HashMap;
 
 use js_sys::Array;
 use wasm_bindgen::{prelude::Closure, JsValue};
 
-use crate::utils::Object;
+use crate::imports::Object;
 
+/// This trait is used to provide an implementation for converting a given type
+/// into a `wasm_bindgen::JsValue`.
 pub trait ToJsValue {
+    /// Convert the current type to a `wasm_bindgen::JsValue`;
     fn to_js_value(&self) -> JsValue;
 }
 
@@ -101,10 +107,13 @@ impl ToJsValue for f64 {
     }
 }
 
-impl ToJsValue for Option<u32> {
+impl<T> ToJsValue for Option<T>
+where
+    T: ToJsValue,
+{
     fn to_js_value(&self) -> JsValue {
-        match *self {
-            Some(val) => val.into(),
+        match self {
+            Some(val) => val.to_js_value(),
             None => JsValue::null(),
         }
     }
@@ -152,5 +161,11 @@ where
 impl ToJsValue for JsValue {
     fn to_js_value(&self) -> JsValue {
         self.to_owned()
+    }
+}
+
+impl ToJsValue for () {
+    fn to_js_value(&self) -> JsValue {
+        JsValue::undefined()
     }
 }

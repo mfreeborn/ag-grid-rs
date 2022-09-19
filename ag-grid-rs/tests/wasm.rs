@@ -1,15 +1,30 @@
-use ag_grid_rs::{traits::ToJsValue, utils::Object, ColumnDef, GridOptions, RowData};
+use ag_grid_core::{convert::ToJsValue, imports::Object};
+use ag_grid_rs::{ColumnDef, GridOptions, SortMethod, ToJsValue};
 use js_sys::Array;
 use wasm_bindgen::{JsCast, JsValue};
 use wasm_bindgen_test::*;
 
 #[wasm_bindgen_test]
+fn test_serialize_sort_method() {
+    assert_eq!(SortMethod::Asc.to_js_value().as_string().unwrap(), "asc");
+    assert_eq!(SortMethod::Desc.to_js_value().as_string().unwrap(), "desc");
+    assert!(SortMethod::Null.to_js_value().is_null());
+}
+
+#[wasm_bindgen_test]
 fn test_serialize_grid_options() {
-    let row = RowData::new(vec![
-        ("make", &"Jaguar"),
-        ("model", &"F-Type"),
-        ("price", &100_000),
-    ]);
+    #[derive(ToJsValue)]
+    struct Data {
+        make: String,
+        model: String,
+        price: u32,
+    }
+
+    let row = Data {
+        make: "Jaguar".to_string(),
+        model: "F-Type".to_string(),
+        price: 100_000,
+    };
 
     let grid_options = GridOptions::new().row_data(vec![row]).to_js_value();
 
@@ -22,20 +37,6 @@ fn test_serialize_grid_options() {
         assert_eq!(row.get("model").as_string().unwrap(), "F-Type");
         assert_eq!(row.get("price").as_f64().unwrap(), 100000f64);
     }
-}
-
-#[wasm_bindgen_test]
-fn test_serialize_row_data() {
-    let row = RowData::new(vec![
-        ("make", &"Jaguar"),
-        ("model", &"F-Type"),
-        ("price", &100_000),
-    ])
-    .to_js_value();
-
-    assert_eq!(to_obj(&row).get("make").as_string().unwrap(), "Jaguar");
-    assert_eq!(to_obj(&row).get("model").as_string().unwrap(), "F-Type");
-    assert_eq!(to_obj(&row).get("price").as_f64().unwrap(), 100_000f64);
 }
 
 #[wasm_bindgen_test]
