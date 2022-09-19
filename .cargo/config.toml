@@ -1,0 +1,3 @@
+[build]
+# setting this stops the `wasm-pack test` command doing a full rebuild every time
+target = "wasm32-unknown-unknown"

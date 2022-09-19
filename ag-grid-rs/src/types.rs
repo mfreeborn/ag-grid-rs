@@ -1,19 +1,14 @@
 use std::future::Future;
 
-use ag_grid_derive::FromInterface;
+use ag_grid_core::{convert::ToJsValue, imports::log};
+use ag_grid_derive::{FromInterface, ToJsValue as ToJsValueMacro};
 use js_sys::Function;
-use serde::Serialize;
 use wasm_bindgen::{prelude::*, JsCast};
 use wasm_bindgen_futures::spawn_local;
 
-use crate::{
-    utils::{log, to_value},
-    RowData,
-};
-
 #[wasm_bindgen]
 extern "C" {
-    type IGetRowsParams;
+    pub(crate) type IGetRowsParams;
 
     #[wasm_bindgen(method, getter, js_name = startRow)]
     fn start_row(this: &IGetRowsParams) -> u32;
@@ -34,11 +29,16 @@ extern "C" {
     fn fail_callback(this: &IGetRowsParams) -> Function;
 }
 
-#[derive(FromInterface)]
+/// Parameters passed to the callback function in [`DataSourceBuilder::new`].
+#[derive(FromInterface, Debug)]
 pub struct GetRowsParams {
+    /// The first row index to get.
     pub start_row: u32,
+    /// The first row index to *not* get.
     pub end_row: u32,
-    pub sort_model: std::vec::Vec<SortModelItem>,
+    /// A vector of `[SortModelItem]` describing how the data is expected to be
+    /// sorted.
+    pub sort_model: Vec<SortModelItem>,
 }
 
 #[wasm_bindgen]
@@ -52,43 +52,67 @@ extern "C" {
     fn sort(this: &ISortModelItem) -> SortDirection;
 }
 
+/// Details of how to sort the requested data.
 #[derive(Debug, FromInterface)]
 pub struct SortModelItem {
+    /// Which column to sort.
     pub col_id: String,
+    /// How the column should be sorted.
     pub sort: SortDirection,
 }
 
-#[derive(Debug)]
 #[wasm_bindgen]
-pub enum SortDirection {
-    Asc,
-    Desc,
+extern "C" {
+    pub(crate) type IHeaderValueGetterParams;
+
+    #[wasm_bindgen(method, getter, js_name = colId)]
+    pub(crate) fn location(this: &IHeaderValueGetterParams) -> Option<String>;
 }
 
+/// Parameters passed to the closure in
+/// [`ColumnDef::header_value_getter`][`crate::ColumnDef::header_value_getter`].
+#[derive(Debug, FromInterface)]
+pub struct HeaderValueGetterParams {
+    /// Where the column is going to appear.
+    pub location: Option<String>,
+}
+
+/// Possible directions for which to sort data.
 #[wasm_bindgen]
+#[derive(Debug)]
+pub enum SortDirection {
+    Asc = "asc",
+    Desc = "desc",
+}
+
+/// A struct passed to the JavaScript grid which is used by AG Grid to fetch the
+/// requested data from the server.
+#[wasm_bindgen]
+#[derive(ToJsValueMacro)]
 pub struct DataSource {
     #[wasm_bindgen(readonly, getter_with_clone, js_name = getRows)]
     pub get_rows: Function,
 }
 
-/// Builder for the datasource used by both `PaginationController` and
-/// `InfiniteRowModel`.
+/// Builder for the [`DataSource`].
 pub struct DataSourceBuilder {
-    /// Callback the grid calls that you implement to fetch rows from the
-    /// server.
+    // Callback the grid calls that the user implements to fetch rows from the
+    // server.
     get_rows: Closure<dyn FnMut(IGetRowsParams)>,
-    // Missing: optional "destroy" method
+    // row_count is deprecated. Use GridOptions.infiniteInitialRowCount instead:
+    // https://github.com/ag-grid/ag-grid/blob/7358e4286fd52946c4fe24bd26b5fbe7fd3b22d4/community-modules/core/src/ts/interfaces/iDatasource.ts#L7-L9
+    //row_count: Option<u32>,
 }
 
 impl DataSourceBuilder {
     /// Start constructing a new `DataSourceBuilder` by providing a callback
-    /// function which will receive `GetRowsParameters`. This callback is
+    /// function which will receive [`GetRowsParams`]. This callback is
     /// called by AG Grid to request new rows from the server.
-    pub fn new<F, Fut>(mut get_rows: F) -> Self
+    pub fn new<F, Fut, T>(mut get_rows: F) -> Self
     where
         F: FnMut(GetRowsParams) -> Fut + 'static,
-        Fut: Future<Output = Result<(Vec<RowData>, Option<u32>), Box<dyn std::error::Error>>>
-            + 'static,
+        Fut: Future<Output = Result<(Vec<T>, Option<u32>), Box<dyn std::error::Error>>> + 'static,
+        T: ToJsValue,
     {
         let get_rows =
             Closure::<dyn FnMut(IGetRowsParams)>::new(move |js_params: IGetRowsParams| {
@@ -98,15 +122,15 @@ impl DataSourceBuilder {
                 let wrapper = async move {
                     match fut.await {
                         Ok((data, last_row_index)) => {
-                            let data = to_value(&data);
-                            let last_row_index = to_value(&last_row_index);
+                            let data = data.to_js_value();
+                            let last_row_index = last_row_index.to_js_value();
                             js_params
                                 .success_callback()
                                 .call2(&JsValue::null(), &data, &last_row_index)
                                 .expect("failed calling success callback");
                         }
                         Err(e) => {
-                            log(format!("Error calling get_rows callback: {e:?}"));
+                            log(&format!("Error calling get_rows callback: {e:?}"));
                             js_params
                                 .fail_callback()
                                 .call0(&JsValue::null())
@@ -121,6 +145,7 @@ impl DataSourceBuilder {
         Self { get_rows }
     }
 
+    /// Finalise construction of a [`DataSource`].
     pub fn build(self) -> DataSource {
         DataSource {
             get_rows: self.get_rows.into_js_value().unchecked_into(),
@@ -128,32 +153,19 @@ impl DataSourceBuilder {
     }
 }
 
-/// An enumeration of possible sorting methods.
-// #[derive(Serialize)]
-// #[serde(rename_all = "camelCase")]
+/// Allowed values for [`ColumnDef::sort`][crate::ColumnDef::sort] and related
+/// methods.
+#[derive(ToJsValueMacro)]
 pub enum SortMethod {
     Asc,
     Desc,
-    // #[serde(serialize_with = "crate::utils::serialize_null")]
+    #[js_value(serialize_as = "null")]
     Null,
 }
 
-impl Serialize for SortMethod {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        match *self {
-            SortMethod::Asc => serializer.serialize_str("asc"),
-            SortMethod::Desc => serializer.serialize_str("desc"),
-            SortMethod::Null => serializer.serialize_none(),
-        }
-    }
-}
-
-/// Options for the row model type.
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
+/// Allowed values for
+/// [`GridOptions::row_model_type`][crate::GridOptions::row_model_type].
+#[derive(ToJsValueMacro)]
 pub enum RowModelType {
     Infinite,
     Viewport,
@@ -161,9 +173,8 @@ pub enum RowModelType {
     ServerSide,
 }
 
-/// Pre-specified filters which can be applied to columns.
-// #[derive(Serialize)]
-// #[serde(rename_all = "camelCase")]
+/// Allowed values for [`ColumnDef::filter`][crate::ColumnDef::filter].
+#[derive(ToJsValueMacro)]
 pub enum Filter {
     /// A filter for number comparisons.
     AgNumberColumnFilter,
@@ -176,145 +187,89 @@ pub enum Filter {
     AgSetColumnFilter,
     /// Enable the default filter. The default is Text Filter for AG Grid
     /// Community and Set Filter for AG Grid Enterprise.
-    // #[serde(serialize_with = "serialize_true")]
+    #[js_value(serialize_as = "true")]
     True,
     /// Explicitly disable filtering.
-    // #[serde(serialize_with = "serialize_false")]
+    #[js_value(serialize_as = "false")]
     False,
     // TODO: Custom(FilterComponent)
 }
 
-impl Serialize for Filter {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        match *self {
-            Filter::AgNumberColumnFilter => serializer.serialize_str("agNumberColumnFilter"),
-            Filter::AgTextColumnFilter => serializer.serialize_str("agTextColumnFilter"),
-            Filter::AgDateColumnFilter => serializer.serialize_str("agDateColumnFilter"),
-            Filter::AgSetColumnFilter => serializer.serialize_str("agSetColumnFilter"),
-            Filter::True => serializer.serialize_bool(true),
-            Filter::False => serializer.serialize_bool(false),
-        }
-    }
-}
-
-/// An enumeration of possible values for [`ColumnDef::lock_position`].
+/// Allowed values for
+/// [`ColumnDef::lock_position`][crate::ColumnDef::lock_position].
+#[derive(ToJsValueMacro)]
 pub enum LockPosition {
+    #[js_value(serialize_as = "true")]
     True,
     False,
     Left,
     Right,
 }
 
-impl Serialize for LockPosition {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        match *self {
-            LockPosition::True => serializer.serialize_bool(true),
-            LockPosition::False => serializer.serialize_bool(false),
-            LockPosition::Left => serializer.serialize_str("left"),
-            LockPosition::Right => serializer.serialize_str("right"),
-        }
-    }
-}
-
-/// An enumeration of possible values for [`ColumnDef::pinned`] and
-/// [`ColumnDef::initial_pinned`].
+/// Allowed values for
+/// [`ColumnDef::pinned`][crate::ColumnDef::pinned] and
+/// [`ColumnDef::initial_pinned`][crate::ColumnDef::initial_pinned].
+#[derive(ToJsValueMacro)]
 pub enum PinnedPosition {
+    #[js_value(serialize_as = "true")]
     True,
     False,
     Left,
     Right,
 }
 
-impl Serialize for PinnedPosition {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        match *self {
-            PinnedPosition::True => serializer.serialize_bool(true),
-            PinnedPosition::False => serializer.serialize_bool(false),
-            PinnedPosition::Left => serializer.serialize_str("left"),
-            PinnedPosition::Right => serializer.serialize_str("right"),
-        }
-    }
-}
-
-/// An enumeration of possible values for
-/// [`ColumnDef::set_editor_popup_position`].
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
+/// Allowed values for
+/// [`ColumnDef::cell_editor_popup_position`][crate::ColumnDef::cell_editor_popup_position].
+#[derive(ToJsValueMacro)]
 pub enum PopupPosition {
     Over,
     Under,
 }
 
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
+/// Allowed values for
+/// [`ColumnDef::menu_tabs`][crate::ColumnDef::menu_tabs].
+#[allow(clippy::enum_variant_names)]
+#[derive(ToJsValueMacro)]
 pub enum MenuTab {
     FilterMenuTab,
     GeneralMenuTab,
     ColumnsMenuTab,
 }
 
-// TODO: shouldn't we need a trait bound "T: Serialize"?
-#[derive(Serialize)]
-#[serde(untagged)]
-pub(crate) enum OneOrMany<T> {
+pub(crate) enum OneOrMany<T>
+where
+    T: ToJsValue,
+{
     One(T),
     Many(Vec<T>),
 }
 
-impl From<String> for OneOrMany<String> {
-    fn from(v: String) -> Self {
+impl<T> ToJsValue for OneOrMany<T>
+where
+    T: ToJsValue,
+{
+    fn to_js_value(&self) -> JsValue {
+        match self {
+            Self::One(v) => v.to_js_value(),
+            Self::Many(v) => v.to_js_value(),
+        }
+    }
+}
+
+impl<T> From<T> for OneOrMany<T>
+where
+    T: ToJsValue,
+{
+    fn from(v: T) -> Self {
         Self::One(v)
     }
 }
 
 impl<T> From<Vec<T>> for OneOrMany<T>
 where
-    T: Into<OneOrMany<T>>,
+    T: Into<OneOrMany<T>> + ToJsValue,
 {
     fn from(v: Vec<T>) -> Self {
         Self::Many(v)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use serde_json::{json, to_value};
-
-    use super::*;
-
-    #[test]
-    #[rustfmt::skip]
-    fn test_serialize_filter() {
-        assert_eq!(to_value(Filter::AgNumberColumnFilter).unwrap(), json!("agNumberColumnFilter"));
-        assert_eq!(to_value(Filter::AgTextColumnFilter).unwrap(), json!("agTextColumnFilter"));
-        assert_eq!(to_value(Filter::AgDateColumnFilter).unwrap(), json!("agDateColumnFilter"));
-        assert_eq!(to_value(Filter::AgSetColumnFilter).unwrap(), json!("agSetColumnFilter"));
-        assert_eq!(to_value(Filter::True).unwrap(), json!(true));
-        assert_eq!(to_value(Filter::False).unwrap(), json!(false));
-    }
-
-    #[test]
-    #[rustfmt::skip]
-    fn test_serialize_row_model_type() {
-        assert_eq!(to_value(RowModelType::Infinite).unwrap(), json!("infinite"));
-        assert_eq!(to_value(RowModelType::Viewport).unwrap(), json!("viewport"));
-        assert_eq!(to_value(RowModelType::ClientSide).unwrap(), json!("clientSide"));
-        assert_eq!(to_value(RowModelType::ServerSide).unwrap(), json!("serverSide"));
-    }
-
-    #[test]
-    fn test_serialize_sort_method() {
-        assert_eq!(to_value(SortMethod::Asc).unwrap(), json!("asc"));
-        assert_eq!(to_value(SortMethod::Desc).unwrap(), json!("desc"));
-        assert_eq!(to_value(SortMethod::Null).unwrap(), json!(null));
     }
 }

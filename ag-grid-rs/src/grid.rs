@@ -1,17 +1,18 @@
+use ag_grid_core::convert::ToJsValue;
 use wasm_bindgen::prelude::*;
 use web_sys::HtmlElement;
 
-use crate::{ColumnApi, DataSource, GridOptions, RowData};
+use crate::{column::ColumnApi, types::DataSource};
 
-/// An instance of an AG Grid.
+/// A handle to the underlying JavaScript grid.
 pub struct Grid {
-    /// The `GridOptions` struct used to construct the grid.
-    pub grid_options: GridOptions,
-    /// An accessor for the [`Grid API`].
+    // /// The [`GridOptions`] struct used to construct the grid.
+    // pub grid_options: GridOptions<T>,
+    /// A handle for the AG Grid [`Grid API`].
     ///
     /// [`Grid API`]: https://www.ag-grid.com/javascript-data-grid/grid-api/
     pub api: GridApi,
-    /// An accessor for the [`Coluumn API`].
+    /// A handle for the AG Grid [`Column API`].
     ///
     /// [`Column API`]: https://www.ag-grid.com/javascript-data-grid/column-api/
     pub column_api: ColumnApi,
@@ -40,6 +41,9 @@ extern "C" {
 
 #[wasm_bindgen]
 extern "C" {
+    /// A handle for the AG Grid [`Grid API`].
+    ///
+    /// [`Grid API`]: https://www.ag-grid.com/javascript-data-grid/grid-api/
     pub type GridApi;
 
     #[wasm_bindgen(method)]
@@ -53,17 +57,22 @@ extern "C" {
 }
 
 impl GridApi {
+    /// Download a CSV export of the grid's data.
     pub fn export_data_as_csv(&self) {
         Self::exportDataAsCsv(self)
     }
 
-    pub fn set_row_data(&self, row_data: Vec<RowData>) {
-        let row_data = serde_wasm_bindgen::to_value(&row_data)
-            .expect("failed to convert row data into JSValue");
-
-        Self::setRowData(self, row_data)
+    /// Set the row data. Applicable when using
+    /// [`RowModelType::ClientSide`][crate::RowModelType::ClientSide].
+    pub fn set_row_data<T>(&self, row_data: Vec<T>)
+    where
+        T: ToJsValue,
+    {
+        Self::setRowData(self, row_data.to_js_value())
     }
 
+    /// Set a new datasource. Applicable when using
+    /// [`RowModelType::Infinite`][crate::RowModelType::Infinite].
     pub fn set_data_source(&self, data_source: DataSource) {
         Self::setDatasource(self, data_source)
     }

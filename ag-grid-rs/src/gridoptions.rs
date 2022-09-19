@@ -1,23 +1,28 @@
 use ag_grid_derive::FieldSetter;
-use serde::Serialize;
-use serde_with::skip_serializing_none;
 use web_sys::HtmlElement;
 
-use crate::{column::ColumnDef, utils::to_value, AgGrid, Grid, RowData, RowModelType};
-
+use crate::{
+    column::ColumnDef,
+    convert::ToJsValue,
+    grid::AgGrid,
+    types::{DataSource, RowModelType},
+    Grid, ToJsValue as ToJsValueMacro,
+};
 /// An instance of an AG Grid [`GridOptions`].
 ///
 /// With this struct, users can specify the initial options for their grid,
-/// before calling the [`build()`] method to receive an instance of [`Grid`].
-/// The various options are fully customisable using the builder pattern, so you
-/// only need to specify what you need. The options mirror those used in the AG
-/// Grid library.
+/// before calling the [`GridOptions::build()`] method to receive an instance of
+/// [`Grid`]. The various options are fully customisable using the builder
+/// pattern, so you only need to specify what you need. The options mirror those
+/// used in the AG Grid library.
 ///
 /// [`GridOptions`]: https://www.ag-grid.com/javascript-data-grid/grid-options/
-#[skip_serializing_none]
-#[derive(Serialize, FieldSetter)]
-#[serde(rename_all = "camelCase")]
-pub struct GridOptions {
+#[derive(FieldSetter, ToJsValueMacro)]
+#[js_value(skip_serializing_none)]
+pub struct GridOptions<T>
+where
+    T: ToJsValue,
+{
     // Accessories
     // All options are enterprise-only
 
@@ -27,10 +32,10 @@ pub struct GridOptions {
     // Column Definitions
     /// Set the column definitions. Fields set here take precedence over those
     /// set in `default_col_def`.
-    pub column_defs: Option<Vec<ColumnDef>>,
+    column_defs: Option<Vec<ColumnDef>>,
     /// Set the default column definition. Fields set here have lower precedence
     /// than fields set on a per-column basis in `column_defs`.
-    pub default_col_def: Option<ColumnDef>,
+    default_col_def: Option<ColumnDef>,
     // default_col_group_def
     // column_types
     // maintain_column_order
@@ -80,7 +85,7 @@ pub struct GridOptions {
 
     // Pagination
     /// Set whether pagination is enabled.
-    pub pagination: Option<bool>,
+    pagination: Option<bool>,
     // TODO
 
     // Pivot and Aggregation
@@ -100,18 +105,41 @@ pub struct GridOptions {
 
     // RowModel
     /// Sets the row model type.
-    pub row_model_type: Option<RowModelType>,
+    row_model_type: Option<RowModelType>,
     // get_row_id
 
     // RowModel: Client Side
     /// Set the row data.
-    pub row_data: Option<Vec<RowData>>,
-    // TODO
+    row_data: Option<Vec<T>>,
 
     // RowModel: Infinite
+    datasource: Option<DataSource>,
+    /// How many extra blank rows to display to the user at the end of the
+    /// dataset, which sets the vertical scroll and then allows the grid to
+    /// request viewing more rows of data.
+    cache_overflow_size: Option<u32>,
+
+    /// How many requests to hit the server with concurrently. If the max is
+    /// reached, requests are queued. Set to `-1` for no maximum restriction on
+    /// requests.
+    max_concurrent_datasource_requests: Option<i32>,
+
     /// How many rows for each block in the store, i.e. how many rows returned
     /// from the server at a time.
-    pub cache_block_size: Option<u32>,
+    cache_block_size: Option<u32>,
+
+    /// How many blocks to keep in the store. Default is no limit, so every
+    /// requested block is kept. Use this if you have memory concerns, and
+    /// blocks that were least recently viewed will be purged when the limit is
+    /// hit. The grid will additionally make sure it has all the blocks needed
+    /// to display what is currently visible, in case this property is set to a
+    /// low value.
+    max_blocks_in_cache: Option<u32>,
+
+    /// How many extra blank rows to display to the user at the end of the
+    /// dataset, which sets the vertical scroll and then allows the grid to
+    /// request viewing more rows of data.
+    infinite_initial_row_count: Option<u32>,
     // TODO
 
     // RowModel: Server Side
@@ -136,7 +164,10 @@ pub struct GridOptions {
     // TODO
 }
 
-impl GridOptions {
+impl<T> GridOptions<T>
+where
+    T: ToJsValue,
+{
     pub fn new() -> Self {
         Default::default()
     }
@@ -145,12 +176,11 @@ impl GridOptions {
     /// constructs the underlying JavaScript grid and returns a handle,
     /// [`Grid`], which provides access to the grid APIs.
     pub fn build(self, div: HtmlElement) -> Grid {
-        let grid_options = to_value(&self);
+        let grid_options = self.to_js_value();
 
         let js_grid = AgGrid::new(div, grid_options);
 
         Grid {
-            grid_options: self,
             api: js_grid.gridOptions().api(),
             column_api: js_grid.gridOptions().columnApi(),
         }

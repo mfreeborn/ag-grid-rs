@@ -1,3 +1,4 @@
+use convert_case::{Case, Casing};
 use darling::{ast, FromDeriveInput, FromField};
 use proc_macro2::{Ident, TokenStream};
 use quote::{quote, ToTokens, TokenStreamExt};
@@ -74,6 +75,7 @@ impl ToTokens for StructReceiver {
 enum FieldType {
     OptionString,
     OptionOneOrManyString,
+    OptionClosure,
     OptionOther(syn::Type),
 }
 
@@ -132,13 +134,14 @@ impl FieldType {
         match remaining.as_slice() {
             ["String"] => FieldType::OptionString,
             ["OneOrMany", "String"] => FieldType::OptionOneOrManyString,
+            ["Closure", _] => FieldType::OptionClosure,
             _ => FieldType::OptionOther(types.get(1).cloned().unwrap()),
         }
     }
 }
 
 #[derive(Debug, FromField)]
-#[darling(attributes(field_setter), forward_attrs(doc, serde))]
+#[darling(attributes(field_setter), forward_attrs(doc))]
 struct FieldReceiver {
     /// Name of the field
     ident: Option<syn::Ident>,
@@ -174,14 +177,37 @@ impl FieldReceiver {
 
         let field_type = FieldType::infer(field_type);
 
-        let (value_type, value_convert, array_value_convert) = match &field_type {
+        let (mutability, value_type, value_convert, array_value_convert) = match &field_type {
+            FieldType::OptionClosure => {
+                // We have two choices. We can either spend the rest of eternity parsing the
+                // exact names of the inputs and outputs of the closure... or we can just assume
+                // the following convention.
+                let pascal_cased = field_ident.to_string().to_case(Case::Pascal);
+                let js_params = format!("I{pascal_cased}Params");
+                let js_params = Ident::new(&js_params, proc_macro2::Span::call_site());
+                let params = format!("{pascal_cased}Params");
+                let params = Ident::new(&params, proc_macro2::Span::call_site());
+                (
+                    quote![mut],
+                    quote![impl FnMut(crate::types::#params) -> String + 'static],
+                    quote![wasm_bindgen::closure::Closure::<
+                        dyn FnMut(crate::types::#js_params) -> String,
+                    >::new(
+                        move |js_params: crate::types::#js_params| value(
+                            (&js_params).into()
+                        )
+                    )],
+                    quote![],
+                )
+            }
             FieldType::OptionString => (
+                quote![],
                 quote![impl AsRef<str>],
                 quote![value.as_ref().to_owned()],
                 quote![],
             ),
-            FieldType::OptionOther(inner_ty) => (quote![#inner_ty], quote![value], quote![]),
             FieldType::OptionOneOrManyString => (
+                quote![],
                 quote![impl AsRef<str>],
                 quote![value.as_ref().to_string().into()],
                 quote![value
@@ -190,11 +216,14 @@ impl FieldReceiver {
                     .collect::<Vec<_>>()
                     .into()],
             ),
+            FieldType::OptionOther(inner_ty) => {
+                (quote![], quote![#inner_ty], quote![value], quote![])
+            }
         };
 
         let setter = quote! {
             #field_docs
-            pub fn #field_ident(mut self, value: #value_type) -> Self {
+            pub fn #field_ident(mut self, #mutability value: #value_type) -> Self {
                 self.#field_ident = Some(#value_convert);
                 self
             }
