@@ -39,6 +39,8 @@ pub struct GetRowsParams {
     /// A vector of `[SortModelItem]` describing how the data is expected to be
     /// sorted.
     pub sort_model: Vec<SortModelItem>,
+    ///
+    pub filter_model: JsValue,
 }
 
 #[wasm_bindgen]
