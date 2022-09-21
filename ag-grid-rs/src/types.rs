@@ -2,7 +2,7 @@ use std::future::Future;
 
 use ag_grid_core::{convert::ToJsValue, imports::log};
 use ag_grid_derive::{FromInterface, ToJsValue as ToJsValueMacro};
-use js_sys::Function;
+use js_sys::{Array, Function, Object};
 use wasm_bindgen::{prelude::*, JsCast};
 use wasm_bindgen_futures::spawn_local;
 
@@ -20,7 +20,7 @@ extern "C" {
     fn sort_model(this: &IGetRowsParams) -> Vec<ISortModelItem>;
 
     #[wasm_bindgen(method, getter, js_name = filterModel)]
-    fn filter_model(this: &IGetRowsParams) -> JsValue;
+    fn filter_model(this: &IGetRowsParams) -> Object;
 
     #[wasm_bindgen(method, getter, js_name = successCallback)]
     fn success_callback(this: &IGetRowsParams) -> Function;
@@ -30,7 +30,7 @@ extern "C" {
 }
 
 /// Parameters passed to the callback function in [`DataSourceBuilder::new`].
-#[derive(FromInterface, Debug)]
+#[derive(Debug)]
 pub struct GetRowsParams {
     /// The first row index to get.
     pub start_row: u32,
@@ -40,7 +40,100 @@ pub struct GetRowsParams {
     /// sorted.
     pub sort_model: Vec<SortModelItem>,
     ///
-    pub filter_model: JsValue,
+    pub filter_model: String,
+}
+
+pub enum FilterModelType {
+    Single(FilterModel),
+    Combined(CombinedFilterModel),
+}
+
+pub enum FilterModel {
+    Text(TextFilter),
+    Number(NumberFilter),
+    Date(DateFilter),
+}
+
+pub enum CombinedFilterModel {
+    Text(CombinedTextFilter),
+    Number(CombinedNumberFilter),
+    Date(CombinedDateFilter),
+}
+
+pub enum JoinOperator {
+    And,
+    Or,
+}
+
+pub struct TextFilter {
+    filter: Option<String>,
+    filter_to: Option<String>,
+    type_: Option<String>,
+}
+
+pub struct NumberFilter {
+    filter: Option<u32>,
+    filter_to: Option<u32>,
+    type_: Option<String>,
+}
+
+pub struct DateFilter {
+    filter: Option<String>,
+    filter_to: Option<String>,
+    type_: Option<String>,
+}
+
+pub struct CombinedTextFilter {
+    condition_1: TextFilter,
+    condition_2: TextFilter,
+    operator: JoinOperator,
+    type_: Option<String>,
+}
+
+pub struct CombinedNumberFilter {
+    condition_1: NumberFilter,
+    condition_2: NumberFilter,
+    operator: JoinOperator,
+    type_: Option<String>,
+}
+
+pub struct CombinedDateFilter {
+    condition_1: DateFilter,
+    condition_2: DateFilter,
+    operator: JoinOperator,
+    type_: Option<String>,
+}
+
+impl From<&IGetRowsParams> for GetRowsParams {
+    fn from(i: &IGetRowsParams) -> Self {
+        Self {
+            start_row: i.start_row(),
+            end_row: i.end_row(),
+            sort_model: i.sort_model().iter().map(SortModelItem::from).collect(),
+            filter_model: {
+                let f = i.filter_model();
+
+                //https://www.ag-grid.com/javascript-data-grid/filter-provided-simple/#simple-filter-options
+                for filter in Object::entries(&f).iter() {
+                    let pair = filter.unchecked_into::<Array>();
+                    let col_name = pair.get(0).as_string().unwrap();
+                    log(&col_name);
+
+                    let filter_model = pair.get(1).unchecked_into::<Object>();
+                    for f in Object::keys(&filter_model).iter() {
+                        log(&f.as_string().unwrap());
+                    }
+                    if filter_model.has_own_property(&"operator".into()) {
+                        log("combined")
+                    } else {
+                        log("single")
+                    }
+                }
+
+                "hi".to_string()
+            },
+        }
+    }
 }
 
 #[wasm_bindgen]
