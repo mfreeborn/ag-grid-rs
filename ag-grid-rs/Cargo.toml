@@ -1,6 +1,6 @@
 [package]
 name = "ag-grid-rs"
-version = "0.2.1"  # remember to update ag-grid-{derive | core} at the same time
+version = "0.2.2"  # remember to update ag-grid-{derive | core} at the same time
 authors = ["Michael Freeborn <michaelfreeborn1@gmail.com>"]
 edition = "2021"
 description = "Wasm bindings for AG Grid"
@@ -13,8 +13,8 @@ keywords = ["wasm", "yew", "datatable", "frontend", "table"]
 categories = ["wasm", "web-programming", "api-bindings"]
 
 [dependencies]
-ag-grid-core = { version = "0.2.1", path = "../ag-grid-core" }
-ag-grid-derive = { version = "0.2.1", path = "../ag-grid-derive" }
+ag-grid-core = { version = "0.2.2", path = "../ag-grid-core" }
+ag-grid-derive = { version = "0.2.2", path = "../ag-grid-derive" }
 chrono = "0.4.22"
 js-sys = "0.3" 
 wasm-bindgen = "0.2.83"
