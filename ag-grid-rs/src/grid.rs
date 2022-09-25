@@ -1,8 +1,10 @@
+//! Types pertaining to the `Grid` itself.
+
 use ag_grid_core::convert::ToJsValue;
 use wasm_bindgen::prelude::*;
 use web_sys::HtmlElement;
 
-use crate::{column::ColumnApi, types::DataSource};
+use crate::{column::ColumnApi, gridoptions::DataSource};
 
 /// A handle to the underlying JavaScript grid.
 pub struct Grid {

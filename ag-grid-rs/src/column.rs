@@ -1,10 +1,9 @@
+//! Types pertaining to the grid columns.
+
 use ag_grid_derive::{FieldSetter, ToJsValue};
 use wasm_bindgen::prelude::*;
 
-use crate::types::{
-    Filter, IHeaderValueGetterParams, LockPosition, MenuTab, OneOrMany, PinnedPosition,
-    PopupPosition, SortMethod,
-};
+use crate::{callbacks::IHeaderValueGetterParams, types::OneOrMany};
 
 #[wasm_bindgen]
 extern "C" {
@@ -268,4 +267,79 @@ impl ColumnDef {
             ..Default::default()
         }
     }
+}
+
+/// Allowed values for [`ColumnDef::sort`][crate::ColumnDef::sort] and related
+/// methods.
+#[derive(ToJsValue)]
+pub enum SortMethod {
+    Asc,
+    Desc,
+    #[js_value(serialize_as = "null")]
+    Null,
+}
+
+/// Allowed values for [`ColumnDef::filter`][crate::ColumnDef::filter].
+#[derive(ToJsValue)]
+pub enum Filter {
+    /// A filter for number comparisons.
+    AgNumberColumnFilter,
+    /// A filter for string comparisons.
+    AgTextColumnFilter,
+    /// A filter for date comparisons.
+    AgDateColumnFilter,
+    /// A filter influenced by how filters work in Microsoft Excel. This is an
+    /// AG Grid Enterprise feature.
+    AgSetColumnFilter,
+    /// Enable the default filter. The default is Text Filter for AG Grid
+    /// Community and Set Filter for AG Grid Enterprise.
+    #[js_value(serialize_as = "true")]
+    True,
+    /// Explicitly disable filtering.
+    #[js_value(serialize_as = "false")]
+    False,
+    // TODO: Custom(FilterComponent)
+}
+
+/// Allowed values for
+/// [`ColumnDef::lock_position`][crate::ColumnDef::lock_position].
+#[derive(ToJsValue)]
+pub enum LockPosition {
+    #[js_value(serialize_as = "true")]
+    True,
+    #[js_value(serialize_as = "false")]
+    False,
+    Left,
+    Right,
+}
+
+/// Allowed values for
+/// [`ColumnDef::pinned`][crate::ColumnDef::pinned] and
+/// [`ColumnDef::initial_pinned`][crate::ColumnDef::initial_pinned].
+#[derive(ToJsValue)]
+pub enum PinnedPosition {
+    #[js_value(serialize_as = "true")]
+    True,
+    #[js_value(serialize_as = "false")]
+    False,
+    Left,
+    Right,
+}
+
+/// Allowed values for
+/// [`ColumnDef::cell_editor_popup_position`][crate::ColumnDef::cell_editor_popup_position].
+#[derive(ToJsValue)]
+pub enum PopupPosition {
+    Over,
+    Under,
+}
+
+/// Allowed values for
+/// [`ColumnDef::menu_tabs`][crate::ColumnDef::menu_tabs].
+#[allow(clippy::enum_variant_names)]
+#[derive(ToJsValue)]
+pub enum MenuTab {
+    FilterMenuTab,
+    GeneralMenuTab,
+    ColumnsMenuTab,
 }

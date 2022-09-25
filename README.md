@@ -17,8 +17,10 @@ ag-grid-rs aims to follow the API of AG Grid in an unsurprising way, and general
 An example using the `Yew` frontend framework is shown below.
 
 ```rust
-use ag_grid_rs::{ColumnDef, DataSourceBuilder, GridOptions, RowModelType,
-ToJsValue};
+use ag_grid_rs::{
+    gridoptions::{DataSourceBuilder, RowModelType},
+    ColumnDef, GridOptions, ToJsValue, 
+};
 use gloo_net::http::Request;
 use serde::Deserialize;
 use wasm_bindgen::JsCast;

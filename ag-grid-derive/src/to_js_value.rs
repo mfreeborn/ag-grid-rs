@@ -60,7 +60,7 @@ impl ToTokens for Receiver {
 
                 quote! {
                     use #root_crate::convert::ToJsValue;
-                    let obj = #root_crate::imports::Object::new();
+                    let obj = #root_crate::imports::ObjectExt::new();
                     #serialized_fields
                     obj.into()
                 }

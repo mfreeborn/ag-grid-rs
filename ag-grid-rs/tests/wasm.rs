@@ -1,5 +1,5 @@
-use ag_grid_core::{convert::ToJsValue, imports::Object};
-use ag_grid_rs::{ColumnDef, GridOptions, SortMethod, ToJsValue};
+use ag_grid_core::{convert::ToJsValue, imports::ObjectExt};
+use ag_grid_rs::{column::SortMethod, ColumnDef, GridOptions, ToJsValue};
 use js_sys::Array;
 use wasm_bindgen::{JsCast, JsValue};
 use wasm_bindgen_test::*;
@@ -32,7 +32,7 @@ fn test_serialize_grid_options() {
     assert!(Array::is_array(&obj.get("rowData")));
     let row_data = obj.get("rowData").unchecked_into::<Array>();
     for r in row_data.iter() {
-        let row = r.unchecked_into::<Object>();
+        let row = r.unchecked_into::<ObjectExt>();
         assert_eq!(row.get("make").as_string().unwrap(), "Jaguar");
         assert_eq!(row.get("model").as_string().unwrap(), "F-Type");
         assert_eq!(row.get("price").as_f64().unwrap(), 100000f64);
@@ -46,6 +46,6 @@ fn test_serialize_column() {
     assert_eq!(to_obj(&col).get("field").as_string().unwrap(), "make");
 }
 
-fn to_obj(value: &JsValue) -> Object {
-    value.to_owned().unchecked_into::<Object>()
+fn to_obj(value: &JsValue) -> ObjectExt {
+    value.to_owned().unchecked_into::<ObjectExt>()
 }

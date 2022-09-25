@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use js_sys::Array;
 use wasm_bindgen::{prelude::Closure, JsValue};
 
-use crate::imports::Object;
+use crate::imports::ObjectExt;
 
 /// This trait is used to provide an implementation for converting a given type
 /// into a `wasm_bindgen::JsValue`.
@@ -136,7 +136,7 @@ where
     V: ToJsValue,
 {
     fn to_js_value(&self) -> JsValue {
-        let obj = Object::new();
+        let obj = ObjectExt::new();
         for (k, v) in self {
             obj.set(k, v.to_js_value())
         }

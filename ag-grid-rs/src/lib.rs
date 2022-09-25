@@ -7,8 +7,10 @@
 //! related dependencies is as follows:
 //!
 //! ```rust
-//! use ag_grid_rs::{ColumnDef, DataSourceBuilder, GridOptions, RowModelType,
-//! ToJsValue};
+//! use ag_grid_rs::{
+//!     gridoptions::{DataSourceBuilder, RowModelType},
+//!     ColumnDef, GridOptions, ToJsValue,
+//! };
 //! use gloo_net::http::Request;
 //! use serde::Deserialize;
 //! use wasm_bindgen::JsCast;
@@ -86,12 +88,14 @@
 //!
 //! [`AG Grid`]: https://www.ag-grid.com/javascript-data-grid/
 
-mod column;
-mod grid;
-mod gridoptions;
+pub mod callbacks;
+pub mod column;
+pub mod filter;
+pub mod grid;
+pub mod gridoptions;
+pub mod sort;
 mod types;
 
-//#[doc(inline)]
 pub use ag_grid_core::convert;
 #[doc(hidden)]
 pub use ag_grid_core::imports;
@@ -99,7 +103,3 @@ pub use ag_grid_derive::ToJsValue;
 pub use column::{ColumnApi, ColumnDef};
 pub use grid::{Grid, GridApi};
 pub use gridoptions::GridOptions;
-pub use types::{
-    DataSource, DataSourceBuilder, Filter, GetRowsParams, HeaderValueGetterParams, LockPosition,
-    PinnedPosition, PopupPosition, RowModelType, SortDirection, SortMethod, SortModelItem,
-};
