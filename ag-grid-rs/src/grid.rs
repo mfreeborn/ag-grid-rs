@@ -65,7 +65,7 @@ impl GridApi {
     }
 
     /// Set the row data. Applicable when using
-    /// [`RowModelType::ClientSide`][crate::RowModelType::ClientSide].
+    /// [`RowModelType::ClientSide`][crate::gridoptions::RowModelType::ClientSide].
     pub fn set_row_data<T>(&self, row_data: Vec<T>)
     where
         T: ToJsValue,
@@ -74,7 +74,7 @@ impl GridApi {
     }
 
     /// Set a new datasource. Applicable when using
-    /// [`RowModelType::Infinite`][crate::RowModelType::Infinite].
+    /// [`RowModelType::Infinite`][crate::gridoptions::RowModelType::Infinite].
     pub fn set_data_source(&self, data_source: DataSource) {
         Self::setDatasource(self, data_source)
     }

@@ -51,7 +51,8 @@ extern "C" {
     pub(crate) fn fail_callback(this: &IGetRowsParams) -> Function;
 }
 
-/// Parameters passed to the callback function in [`DataSourceBuilder::new`].
+/// Parameters passed to the callback function in
+/// [`DataSourceBuilder::new`][`crate::gridoptions::DataSourceBuilder`].
 #[derive(Debug)]
 pub struct GetRowsParams {
     /// The first row index to get.
