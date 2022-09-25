@@ -1,11 +1,19 @@
+//! Types pertaining to defining and constructing a `Grid`.
+
+use std::future::Future;
+
+use ag_grid_core::imports::log;
 use ag_grid_derive::FieldSetter;
+use js_sys::Function;
+use wasm_bindgen::{prelude::*, JsCast};
+use wasm_bindgen_futures::spawn_local;
 use web_sys::HtmlElement;
 
 use crate::{
+    callbacks::{GetRowsParams, IGetRowsParams},
     column::ColumnDef,
     convert::ToJsValue,
     grid::AgGrid,
-    types::{DataSource, RowModelType},
     Grid, ToJsValue as ToJsValueMacro,
 };
 /// An instance of an AG Grid [`GridOptions`].
@@ -183,6 +191,84 @@ where
         Grid {
             api: js_grid.gridOptions().api(),
             column_api: js_grid.gridOptions().columnApi(),
+        }
+    }
+}
+
+/// Allowed values for
+/// [`GridOptions::row_model_type`][crate::GridOptions::row_model_type].
+#[derive(ToJsValueMacro)]
+pub enum RowModelType {
+    Infinite,
+    Viewport,
+    ClientSide,
+    ServerSide,
+}
+
+/// A struct passed to the JavaScript grid which is used by AG Grid to fetch the
+/// requested data from the server.
+#[wasm_bindgen]
+#[derive(ToJsValueMacro)]
+pub struct DataSource {
+    #[wasm_bindgen(readonly, getter_with_clone, js_name = getRows)]
+    pub get_rows: Function,
+}
+
+/// Builder for the [`DataSource`].
+pub struct DataSourceBuilder {
+    // Callback the grid calls that the user implements to fetch rows from the
+    // server.
+    get_rows: Closure<dyn FnMut(IGetRowsParams)>,
+    // row_count is deprecated. Use GridOptions.infiniteInitialRowCount instead:
+    // https://github.com/ag-grid/ag-grid/blob/7358e4286fd52946c4fe24bd26b5fbe7fd3b22d4/community-modules/core/src/ts/interfaces/iDatasource.ts#L7-L9
+    //row_count: Option<u32>,
+}
+
+impl DataSourceBuilder {
+    /// Start constructing a new `DataSourceBuilder` by providing a callback
+    /// function which will receive [`GetRowsParams`]. This callback is
+    /// called by AG Grid to request new rows from the server.
+    pub fn new<F, Fut, T>(mut get_rows: F) -> Self
+    where
+        F: FnMut(GetRowsParams) -> Fut + 'static,
+        Fut: Future<Output = Result<(Vec<T>, Option<u32>), Box<dyn std::error::Error>>> + 'static,
+        T: ToJsValue,
+    {
+        let get_rows =
+            Closure::<dyn FnMut(IGetRowsParams)>::new(move |js_params: IGetRowsParams| {
+                let params = (&js_params).into();
+                let fut = get_rows(params);
+
+                let wrapper = async move {
+                    match fut.await {
+                        Ok((data, last_row_index)) => {
+                            let data = data.to_js_value();
+                            let last_row_index = last_row_index.to_js_value();
+                            js_params
+                                .success_callback()
+                                .call2(&JsValue::null(), &data, &last_row_index)
+                                .expect("failed calling success callback");
+                        }
+                        Err(e) => {
+                            log(&format!("Error calling get_rows callback: {e:?}"));
+                            js_params
+                                .fail_callback()
+                                .call0(&JsValue::null())
+                                .expect("failed calling failure callback");
+                        }
+                    };
+                };
+
+                spawn_local(wrapper)
+            });
+
+        Self { get_rows }
+    }
+
+    /// Finalise construction of a [`DataSource`].
+    pub fn build(self) -> DataSource {
+        DataSource {
+            get_rows: self.get_rows.into_js_value().unchecked_into(),
         }
     }
 }
