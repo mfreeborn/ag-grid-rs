@@ -93,7 +93,9 @@ pub mod column;
 pub mod filter;
 pub mod grid;
 pub mod gridoptions;
+mod shared;
 pub mod sort;
+#[doc(hidden)]
 mod types;
 
 pub use ag_grid_core::convert;
