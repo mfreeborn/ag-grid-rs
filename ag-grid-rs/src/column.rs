@@ -3,6 +3,7 @@
 use ag_grid_derive::{FieldSetter, ToJsValue};
 use wasm_bindgen::prelude::*;
 
+pub use crate::shared::SortMethod;
 use crate::{callbacks::IHeaderValueGetterParams, types::OneOrMany};
 
 #[wasm_bindgen]
@@ -267,16 +268,6 @@ impl ColumnDef {
             ..Default::default()
         }
     }
-}
-
-/// Allowed values for [`ColumnDef::sort`][crate::ColumnDef::sort] and related
-/// methods.
-#[derive(ToJsValue)]
-pub enum SortMethod {
-    Asc,
-    Desc,
-    #[js_value(serialize_as = "null")]
-    Null,
 }
 
 /// Allowed values for [`ColumnDef::filter`][crate::ColumnDef::filter].
