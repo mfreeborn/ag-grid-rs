@@ -575,7 +575,7 @@ pub struct DataSourceBuilder {
     get_rows: Closure<dyn FnMut(IGetRowsParams)>,
     // row_count is deprecated. Use GridOptions.infiniteInitialRowCount instead:
     // https://github.com/ag-grid/ag-grid/blob/7358e4286fd52946c4fe24bd26b5fbe7fd3b22d4/community-modules/core/src/ts/interfaces/iDatasource.ts#L7-L9
-    //row_count: Option<u32>,
+    // row_count: Option<u32>,
 }
 
 impl DataSourceBuilder {

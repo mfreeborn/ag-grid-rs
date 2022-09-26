@@ -28,7 +28,7 @@ pub fn field_setter(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 /// #[derive(ToJsValue)]
 /// struct Data {
 ///     first_value: String,
-///     second_value: bool
+///     second_value: bool,
 /// }
 /// ```
 ///

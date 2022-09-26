@@ -38,7 +38,7 @@ pub fn about() -> Html {
             let field_names = vec!["athlete", "age", "country", "year"];
             let cols = field_names
                 .iter()
-                .map(|name| ColumnDef::new(name).sortable(true))
+                .map(|name| ColumnDef::new().field(name).sortable(true))
                 .collect();
 
             // Create your datasource, including a closure that will retunr rows from the

@@ -19,7 +19,6 @@ extern "C" {
 #[js_value(skip_serializing_none)]
 pub struct ColumnDef {
     // Base
-    #[field_setter(skip)]
     field: Option<String>,
 
     /// The unique ID to give the column. This is optional. If missing, the ID
@@ -262,11 +261,8 @@ impl ColumnDef {
     /// Create a new column definition, specifying the field of the row object
     /// to get the cell's data from. Deep references into a row object is
     /// supported via dot notation, i.e 'address.firstLine'.
-    pub fn new<S: AsRef<str>>(field: S) -> Self {
-        Self {
-            field: Some(field.as_ref().to_string()),
-            ..Default::default()
-        }
+    pub fn new() -> Self {
+        Default::default()
     }
 }
 
