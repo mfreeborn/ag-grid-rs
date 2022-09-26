@@ -41,7 +41,7 @@ fn test_serialize_grid_options() {
 
 #[wasm_bindgen_test]
 fn test_serialize_column() {
-    let col = ColumnDef::new("make").to_js_value();
+    let col = ColumnDef::new().field("make").to_js_value();
 
     assert_eq!(to_obj(&col).get("field").as_string().unwrap(), "make");
 }
