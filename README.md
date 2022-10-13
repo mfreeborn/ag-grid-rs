@@ -64,7 +64,7 @@ pub fn table() -> Html {
                 // `params` contains information from AG Grid about which rows to get, how to
                 // sort the data, etc
                 let data_url = "https://www.ag-grid.com/example-assets/olympic-winners.json";
-                let rows = gloo_net::http::Request::get(data_url)
+                let rows = Request::get(data_url)
                     .send()
                     .await?
                     .json::<Vec<JsonData>>()
