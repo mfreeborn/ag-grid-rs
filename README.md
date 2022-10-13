@@ -14,7 +14,24 @@ Rust bindings for the [AG Grid](https://www.ag-grid.com/) JavaScript table libra
 
 ag-grid-rs aims to follow the API of AG Grid in an unsurprising way, and generally makes use of the builder pattern for constructing the Rust structures.
 
-An example using the `Yew` frontend framework is shown below.
+Standalone examples can be found in the [ag-grid-rs/examples/](https://github.com/mfreeborn/ag-grid-rs/tree/main/examples) directory, and a basic example using the `Yew` frontend framework is shown below.
+
+First, make sure you have the JavaScript AG Grid library available to the web page by including a CDN link in your base HTML page:
+
+```html
+// index.html
+
+<!doctype html>
+<html lang="en">
+    <head>
+        <!-- snip -->
+        <script src="https://unpkg.com/ag-grid-community/dist/ag-grid-community.min.js"></script>
+    </head>
+    <!-- snip -->
+</html>
+```
+
+Then, in your application:
 
 ```rust
 use ag_grid_rs::{
@@ -27,8 +44,8 @@ use wasm_bindgen::JsCast;
 use web_sys::HtmlElement;
 use yew::prelude::*;
 
-#[function_component(About)]
-pub fn about() -> Html {
+#[function_component(Table)]
+pub fn table() -> Html {
     // Fire the hook just once on initial load
     use_effect_with_deps(
         |_| {
@@ -41,13 +58,13 @@ pub fn about() -> Html {
                 .map(|name| ColumnDef::new().field(name).sortable(true))
                 .collect();
 
-            // Create your datasource, including a closure that will retunr rows from the
+            // Create your datasource, including a closure that will return rows from the
             // server
             let data_source = DataSourceBuilder::new(|params| async move {
                 // `params` contains information from AG Grid about which rows to get, how to
                 // sort the data, etc
                 let data_url = "https://www.ag-grid.com/example-assets/olympic-winners.json";
-                let rows = gloo_net::http::Request::get(data_url)
+                let rows = Request::get(data_url)
                     .send()
                     .await?
                     .json::<Vec<JsonData>>()

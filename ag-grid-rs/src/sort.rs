@@ -25,7 +25,7 @@ pub struct SortModelItem {
 
 /// Possible directions for which to sort data.
 #[wasm_bindgen]
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum SortDirection {
     Asc = "asc",
     Desc = "desc",
