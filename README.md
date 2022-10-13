@@ -58,7 +58,7 @@ pub fn table() -> Html {
                 .map(|name| ColumnDef::new().field(name).sortable(true))
                 .collect();
 
-            // Create your datasource, including a closure that will retunr rows from the
+            // Create your datasource, including a closure that will return rows from the
             // server
             let data_source = DataSourceBuilder::new(|params| async move {
                 // `params` contains information from AG Grid about which rows to get, how to
