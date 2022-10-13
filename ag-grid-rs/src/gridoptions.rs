@@ -55,7 +55,7 @@ where
     /// If `true`, then dots in field names (e.g. 'address.firstLine') are not
     /// treated as deep references. Allows you to use dots in your field name if
     /// you prefer.
-    suppress_dot_field_notation: Option<bool>,
+    suppress_field_dot_notation: Option<bool>,
 
     // Column Headers
     /// The height in pixels for the row containing the column label header. If
@@ -362,14 +362,14 @@ where
     /// grid is aligned with another grid and will scroll when the other grid
     /// scrolls. (Should not be used in combination with
     /// [`GridOptions::always_show_horizontal_scroll`].)
-    suppress_horizontal_scrollbar: Option<bool>,
+    suppress_horizontal_scroll: Option<bool>,
 
     /// When `true`, the grid will not scroll to the top when new row data is
     /// provided. Use this if you don't want the default behaviour of scrolling
     /// to the top every time you load new data.
     suppress_scroll_on_new_data: Option<bool>,
 
-    /// When `true`, the grid will not allow mousewheel / touchpad scroll when
+    /// When `true`, the grid will not allow mousewheel/touchpad scroll when
     /// popup elements are present.
     suppress_scroll_when_popups_are_open: Option<bool>,
 

@@ -1,6 +1,10 @@
 [workspace]
 members = [
+    # Packages
     "ag-grid-rs",
     "ag-grid-derive",
     "ag-grid-core",
+
+    # Examples
+    "examples/datasource-yew"
 ]

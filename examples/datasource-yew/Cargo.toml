@@ -1,0 +1,22 @@
+[package]
+name = "datasource-yew"
+version = "0.1.0"
+authors = ["Michael Freeborn <michaelfreeborn1@gmail.com>"]
+edition = "2021"
+
+[dependencies]
+ag-grid-rs = { path = "../../ag-grid-rs" }
+yew = "0.19.0"
+gloo-net = { version = "0.2.4", features = ["json", "http"] }
+log = "0.4.6"
+serde = { version = "1", features = [ "derive" ] }
+wasm-bindgen = "0.2"
+wasm-logger = "0.2"
+
+[dependencies.web-sys]
+version = "0.3"
+features = [
+    "Document",
+    "HtmlElement",
+    "Window"
+]
