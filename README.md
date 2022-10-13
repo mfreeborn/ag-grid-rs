@@ -14,7 +14,7 @@ Rust bindings for the [AG Grid](https://www.ag-grid.com/) JavaScript table libra
 
 ag-grid-rs aims to follow the API of AG Grid in an unsurprising way, and generally makes use of the builder pattern for constructing the Rust structures.
 
-Standalone examples can be found in the [ag-grid-rs/examples/](https://github.com/mfreeborn/ag-grid-rs/tree/main/examples) directory, and a basic example using the `Yew` frontend framework is shown below.
+Standalone examples can be found in the [examples/](https://github.com/mfreeborn/ag-grid-rs/tree/main/examples) directory, and a basic example using the `Yew` frontend framework is shown below.
 
 First, make sure you have the JavaScript AG Grid library available to the web page by including a CDN link in your base HTML page:
 
