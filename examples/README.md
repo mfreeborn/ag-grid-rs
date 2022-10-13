@@ -1,7 +1,6 @@
 # Examples
 
-## How to Run
-All the examples can be built locally using [Trunk](https://trunkrs.dev/). For instance, the following command builds and serves the `datasource`` example:
+All the examples can be built locally using [Trunk](https://trunkrs.dev/). For instance, the following command builds and serves the `datasource-yew` example:
 
 ```bash
 cd examples/datasource-yew
