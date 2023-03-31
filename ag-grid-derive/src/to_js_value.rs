@@ -32,6 +32,7 @@ pub(crate) fn to_js_value_impl(input: DeriveInput) -> proc_macro::TokenStream {
 }
 
 #[derive(Debug, FromDeriveInput)]
+#[darling(attributes(js_value))]
 struct Receiver {
     ident: syn::Ident,
     data: ast::Data<VariantReceiver, FieldReceiver>,
